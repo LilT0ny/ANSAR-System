@@ -44,17 +44,6 @@ const Patients = () => {
             paymentStatus: 'AL_DIA',
             isActive: true
         },
-        {
-            id: 4,
-            firstName: 'Anthony Javier ',
-            lastName: 'Gomez Niño',
-            docId: '1750148890',
-            email: 'anjagoni@gmail.com',
-            phone: '0978733414',
-            lastVisit: '2026-01-20',
-            paymentStatus: 'DEUDA',
-            isActive: true
-        }
     ]);
 
     const { register, handleSubmit, reset, formState: { errors } } = useForm();
