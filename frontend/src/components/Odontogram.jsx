@@ -5,7 +5,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { X, Check, Activity, Trash2 } from 'lucide-react';
 import clsx from 'clsx';
 
-const Odontogram = ({ patientId }) => {
+const Odontogram = ({ patientId, readOnly = false }) => {
     const teeth = useOdontogramStore((state) => state.teeth);
     const updateTooth = useOdontogramStore((state) => state.updateTooth);
     const selectedTooth = useOdontogramStore((state) => state.selectedTooth);
@@ -20,6 +20,7 @@ const Odontogram = ({ patientId }) => {
     const lowerLeft = [31, 32, 33, 34, 35, 36, 37, 38];
 
     const handleToothClick = (id) => {
+        if (readOnly) return;
         selectTooth(id);
         if (currentTool !== 'select') {
             updateTooth(id, { status: currentTool });
@@ -29,17 +30,19 @@ const Odontogram = ({ patientId }) => {
     const getToothState = (id) => teeth[id] || { status: 'healthy' };
 
     return (
-        <div className="bg-white p-6 rounded-xl shadow-lg border border-gray-100 relative">
+        <div className={clsx("bg-white p-6 rounded-2xl shadow-lg border border-gray-100 relative transition-all", readOnly && "opacity-80 pointer-events-none")}>
             <div className="flex justify-between items-center mb-6">
-                <h2 className="text-xl font-serif font-bold text-gray-800">Odontograma Interactivo</h2>
+                <h2 className="text-xl font-serif font-bold text-gray-800">Odontograma {readOnly ? '(Solo Lectura)' : 'Interactivo'}</h2>
 
-                {/* Toolbar */}
-                <div className="flex space-x-2 bg-gray-50 p-2 rounded-lg border border-gray-200">
-                    <ToolButton tool="caries" icon={Activity} color="text-red-500" current={currentTool} set={setCurrentTool} label="Caries" />
-                    <ToolButton tool="treated" icon={Check} color="text-green-500" current={currentTool} set={setCurrentTool} label="Tratado" />
-                    <ToolButton tool="missing" icon={X} color="text-gray-800" current={currentTool} set={setCurrentTool} label="Ausente" />
-                    <ToolButton tool="healthy" icon={Trash2} color="text-blue-500" current={currentTool} set={setCurrentTool} label="Limpiar" />
-                </div>
+                {/* Toolbar - Hidden if ReadOnly */}
+                {!readOnly && (
+                    <div className="flex space-x-2 bg-gray-50 p-2 rounded-lg border border-gray-200">
+                        <ToolButton tool="caries" icon={Activity} color="text-red-500" current={currentTool} set={setCurrentTool} label="Caries" />
+                        <ToolButton tool="treated" icon={Check} color="text-green-500" current={currentTool} set={setCurrentTool} label="Tratado" />
+                        <ToolButton tool="missing" icon={X} color="text-gray-800" current={currentTool} set={setCurrentTool} label="Ausente" />
+                        <ToolButton tool="healthy" icon={Trash2} color="text-blue-500" current={currentTool} set={setCurrentTool} label="Limpiar" />
+                    </div>
+                )}
             </div>
 
             <div className="flex flex-col items-center space-y-8">
@@ -66,12 +69,12 @@ const Odontogram = ({ patientId }) => {
 
             {/* Selected Tooth Details Popup */}
             <AnimatePresence>
-                {selectedTooth && (
+                {selectedTooth && !readOnly && (
                     <motion.div
                         initial={{ opacity: 0, y: 20 }}
                         animate={{ opacity: 1, y: 0 }}
                         exit={{ opacity: 0, y: 20 }}
-                        className="absolute bottom-4 right-4 bg-white p-4 rounded-lg shadow-xl border border-gray-200 w-64"
+                        className="absolute bottom-4 right-4 bg-white p-4 rounded-lg shadow-xl border border-gray-200 w-64 z-20"
                     >
                         <div className="flex justify-between items-center mb-2">
                             <h3 className="font-serif font-bold">Diente #{selectedTooth}</h3>

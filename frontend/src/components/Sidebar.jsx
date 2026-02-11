@@ -1,9 +1,11 @@
 import React from 'react';
-import { NavLink } from 'react-router-dom';
+import { NavLink, useNavigate } from 'react-router-dom';
 import { Home, User, Calendar, FileText, Settings, LogOut, TrendingUp } from 'lucide-react';
 import clsx from 'clsx';
 
 const Sidebar = () => {
+    const navigate = useNavigate();
+
     const menuItems = [
         { name: 'Inicio', path: '/dashboard', icon: Home },
         { name: 'Pacientes', path: '/pacientes', icon: User },
@@ -13,10 +15,17 @@ const Sidebar = () => {
         { name: 'Configuración', path: '/configuracion', icon: Settings },
     ];
 
+    const handleLogout = () => {
+        if (window.confirm('¿Estás segura de que quieres cerrar sesión?')) {
+            localStorage.removeItem('token');
+            navigate('/login');
+        }
+    };
+
     return (
         <div className="h-16 bg-white border-b border-gray-200 flex items-center justify-between px-6 shadow-sm sticky top-0 z-40">
-            <div className="flex items-center">
-                <div className="w-8 h-8 bg-primary rounded-lg flex items-center justify-center text-white font-serif font-bold text-lg mr-3">
+            <div className="flex items-center cursor-pointer" onClick={() => navigate('/dashboard')}>
+                <div className="w-8 h-8 bg-primary rounded-lg flex items-center justify-center text-white font-serif font-bold text-lg mr-3 shadow-sm hover:shadow-md transition-shadow">
                     A
                 </div>
                 <h1 className="text-xl font-serif font-bold text-gray-800 tracking-wide hidden md:block">AN-SAR</h1>
@@ -42,7 +51,11 @@ const Sidebar = () => {
                 ))}
             </nav>
 
-            <button className="flex items-center text-gray-400 hover:text-red-500 transition-colors p-2 rounded-lg hover:bg-red-50" title="Cerrar Sesión">
+            <button
+                onClick={handleLogout}
+                className="flex items-center text-gray-400 hover:text-red-500 transition-colors p-2 rounded-lg hover:bg-red-50"
+                title="Cerrar Sesión"
+            >
                 <LogOut size={20} />
             </button>
         </div>

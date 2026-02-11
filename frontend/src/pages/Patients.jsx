@@ -1,33 +1,95 @@
 import React, { useState } from 'react';
 import { useForm } from 'react-hook-form';
-import { Search, Plus, Edit, Trash2, X, Check } from 'lucide-react';
+import { Search, Plus, Edit, Trash2, X, Check, Mail, AlertTriangle } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 import clsx from 'clsx';
 
-
 const Patients = () => {
+    const navigate = useNavigate();
     const [showForm, setShowForm] = useState(false);
     const [searchTerm, setSearchTerm] = useState('');
 
-    // Mock data for display
+    // Mock data for display with new fields for UH 11 & UH 12
     const [patients, setPatients] = useState([
-        { id: 1, firstName: 'Juan', lastName: 'Perez', docId: '12345678', email: 'juan@example.com', phone: '555-0123' },
-        { id: 2, firstName: 'Maria', lastName: 'Gomez', docId: '87654321', email: 'maria@example.com', phone: '555-0987' },
+        {
+            id: 1,
+            firstName: 'Juan',
+            lastName: 'Pérez',
+            docId: '12345678',
+            email: 'juan@example.com',
+            phone: '555-0123',
+            lastVisit: '2026-02-10',
+            paymentStatus: 'DEUDA', // 'DEUDA' | 'AL_DIA'
+            isActive: true
+        },
+        {
+            id: 2,
+            firstName: 'María',
+            lastName: 'López',
+            docId: '87654321',
+            email: 'maria@example.com',
+            phone: '555-0987',
+            lastVisit: '2026-02-05',
+            paymentStatus: 'AL_DIA',
+            isActive: true
+        },
+        {
+            id: 3,
+            firstName: 'Carlos',
+            lastName: 'Ruiz',
+            docId: '11223344',
+            email: 'carlos@example.com',
+            phone: '555-4433',
+            lastVisit: '2025-12-15',
+            paymentStatus: 'AL_DIA',
+            isActive: true
+        },
+        {
+            id: 4,
+            firstName: 'Anthony Javier ',
+            lastName: 'Gomez Niño',
+            docId: '1750148890',
+            email: 'anjagoni@gmail.com',
+            phone: '0978733414',
+            lastVisit: '2026-01-20',
+            paymentStatus: 'DEUDA',
+            isActive: true
+        }
     ]);
 
     const { register, handleSubmit, reset, formState: { errors } } = useForm();
 
     const onSubmit = (data) => {
         console.log(data);
-        // TODO: Connect to backend API
-        setPatients([...patients, { ...data, id: Date.now() }]);
+        // Connect to backend API in real app
+        setPatients([...patients, {
+            ...data,
+            id: Date.now(),
+            lastVisit: new Date().toISOString().split('T')[0],
+            paymentStatus: 'AL_DIA',
+            isActive: true
+        }]);
         setShowForm(false);
         reset();
     };
 
+    const handleSoftDelete = (id) => {
+        if (window.confirm('¿Está seguro de realizar la baja lógica de este paciente?')) {
+            setPatients(patients.map(p => p.id === id ? { ...p, isActive: false } : p));
+        }
+    };
+
+    const sendPaymentReminder = (email) => {
+        alert(`Recordatorio de pago enviado a ${email}`);
+        // Integration with Resend/SendGrid would go here (UH 7/UH 12)
+    };
+
     const filteredPatients = patients.filter(patient =>
-        patient.lastName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        patient.firstName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        patient.docId.includes(searchTerm)
+        patient.isActive && (
+            patient.lastName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+            patient.firstName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+            patient.docId.includes(searchTerm)
+        )
     );
 
     return (
@@ -36,11 +98,11 @@ const Patients = () => {
                 <header className="flex justify-between items-center mb-8">
                     <div>
                         <h1 className="text-3xl font-serif font-bold text-gray-800">Gestión de Pacientes</h1>
-                        <p className="text-secondary mt-1">Administra la base de datos de tus pacientes.</p>
+                        <p className="text-secondary mt-1">Administra la base de datos, historial y estados de cuenta.</p>
                     </div>
                     <button
                         onClick={() => setShowForm(true)}
-                        className="bg-primary hover:bg-green-600 text-white px-4 py-2 rounded-lg flex items-center space-x-2 transition-colors shadow-sm"
+                        className="bg-primary hover:bg-green-600 text-white px-4 py-2 rounded-lg flex items-center space-x-2 transition-colors shadow-sm cursor-pointer"
                     >
                         <Plus size={20} />
                         <span>Nuevo Paciente</span>
@@ -62,32 +124,76 @@ const Patients = () => {
                 {/* Patients Table */}
                 <div className="bg-white rounded-lg shadow-sm border border-gray-100 overflow-hidden">
                     <table className="w-full text-left">
-                        <thead className="bg-gray-50 text-gray-500 font-medium">
+                        <thead className="bg-gray-50 text-gray-500 font-medium text-sm">
                             <tr>
-                                <th className="px-6 py-4">Nombre Completo</th>
-                                <th className="px-6 py-4">Documento</th>
-                                <th className="px-6 py-4">Email</th>
-                                <th className="px-6 py-4">Teléfono</th>
+                                <th className="px-6 py-4">Paciente</th>
+                                <th className="px-6 py-4">Última Visita</th>
+                                <th className="px-6 py-4">Estado de Pago</th>
+                                <th className="px-6 py-4">Contacto</th>
                                 <th className="px-6 py-4 text-center">Acciones</th>
                             </tr>
                         </thead>
-                        <tbody className="divide-y divide-gray-100">
+                        <tbody className="divide-y divide-gray-100 text-sm">
                             {filteredPatients.map((patient) => (
                                 <tr key={patient.id} className="hover:bg-gray-50 transition-colors">
-                                    <td className="px-6 py-4 font-medium text-gray-800">{patient.firstName} {patient.lastName}</td>
-                                    <td className="px-6 py-4 text-gray-600">{patient.docId}</td>
-                                    <td className="px-6 py-4 text-gray-600">{patient.email}</td>
-                                    <td className="px-6 py-4 text-gray-600">{patient.phone}</td>
-                                    <td className="px-6 py-4 flex justify-center space-x-3">
-                                        <button className="text-blue-500 hover:text-blue-700"><Edit size={18} /></button>
-                                        <button className="text-red-500 hover:text-red-700"><Trash2 size={18} /></button>
+                                    <td className="px-6 py-4">
+                                        <div>
+                                            <div className="text-base font-semibold text-gray-900">{patient.firstName} {patient.lastName}</div>
+                                            <div className="text-sm text-gray-500">ID: {patient.docId}</div>
+                                        </div>
+                                    </td>
+                                    <td className="px-6 py-4 text-sm text-gray-500">
+                                        {patient.lastVisit}
+                                    </td>
+                                    <td className="px-6 py-4">
+                                        {patient.paymentStatus === 'DEUDA' ? (
+                                            <div className="flex items-center space-x-2">
+                                                <span className="bg-red-100 text-red-700 px-3 py-1 rounded-full text-xs font-bold flex items-center gap-1 border border-red-200">
+                                                    <AlertTriangle size={12} />
+                                                    DEUDA
+                                                </span>
+                                                <button
+                                                    onClick={() => sendPaymentReminder(patient.email)}
+                                                    className="text-blue-500 hover:text-blue-700 text-xs underline cursor-pointer"
+                                                    title="Enviar Recordatorio"
+                                                >
+                                                    [Enviar]
+                                                </button>
+                                            </div>
+                                        ) : (
+                                            <span className="bg-green-100 text-green-700 px-3 py-1 rounded-full text-xs font-bold border border-green-200">
+                                                AL DÍA
+                                            </span>
+                                        )}
+                                    </td>
+                                    <td className="px-6 py-4 text-gray-600">
+                                        <div className="flex flex-col">
+                                            <span>{patient.email}</span>
+                                            <span className="text-xs text-gray-400">{patient.phone}</span>
+                                        </div>
+                                    </td>
+                                    <td className="px-6 py-4 flex justify-center space-x-3 items-center">
+                                        <button
+                                            onClick={() => navigate(`/historia/${patient.id}`)}
+                                            className="text-gray-400 hover:text-blue-600 transition-colors"
+                                            title="Ver Historial/Editar"
+                                        >
+                                            <Edit size={18} />
+                                        </button>
+                                        <button
+                                            className="text-gray-400 hover:text-red-500 transition-colors"
+                                            title="Baja Lógica"
+                                            onClick={() => handleSoftDelete(patient.id)}
+                                        >
+                                            <Trash2 size={18} />
+                                        </button>
                                     </td>
                                 </tr>
                             ))}
                             {filteredPatients.length === 0 && (
                                 <tr>
                                     <td colSpan="5" className="px-6 py-8 text-center text-gray-400">
-                                        No se encontraron pacientes.
+                                        No se encontraron pacientes activos.
                                     </td>
                                 </tr>
                             )}
@@ -97,7 +203,7 @@ const Patients = () => {
 
                 {/* Register Modal */}
                 {showForm && (
-                    <div className="fixed inset-0 bg-black/50 flex justify-center items-center z-50 p-4">
+                    <div className="fixed inset-0 bg-black/50 flex justify-center items-center z-50 p-4 backdrop-blur-sm">
                         <div className="bg-white rounded-xl shadow-xl w-full max-w-2xl overflow-hidden animate-in fade-in zoom-in duration-200">
                             <div className="flex justify-between items-center p-6 border-b border-gray-100">
                                 <h2 className="text-2xl font-serif font-bold text-gray-800">Registrar Nuevo Paciente</h2>
@@ -111,7 +217,7 @@ const Patients = () => {
                                     <label className="block text-sm font-medium text-gray-700 mb-1">Nombre</label>
                                     <input
                                         {...register("firstName", { required: "El nombre es requerido" })}
-                                        className={clsx("w-full border rounded-lg px-4 py-2 focus:ring-2 focus:ring-primary focus:border-transparent outline-none", errors.firstName ? "border-red-500" : "border-gray-300")}
+                                        className={clsx("w-full border rounded-lg px-4 py-2 focus:ring-2 focus:ring-primary focus:border-transparent outline-none transition-all", errors.firstName ? "border-red-500" : "border-gray-300")}
                                     />
                                     {errors.firstName && <span className="text-red-500 text-xs mt-1">{errors.firstName.message}</span>}
                                 </div>
@@ -120,7 +226,7 @@ const Patients = () => {
                                     <label className="block text-sm font-medium text-gray-700 mb-1">Apellido</label>
                                     <input
                                         {...register("lastName", { required: "El apellido es requerido" })}
-                                        className={clsx("w-full border rounded-lg px-4 py-2 focus:ring-2 focus:ring-primary focus:border-transparent outline-none", errors.lastName ? "border-red-500" : "border-gray-300")}
+                                        className={clsx("w-full border rounded-lg px-4 py-2 focus:ring-2 focus:ring-primary focus:border-transparent outline-none transition-all", errors.lastName ? "border-red-500" : "border-gray-300")}
                                     />
                                     {errors.lastName && <span className="text-red-500 text-xs mt-1">{errors.lastName.message}</span>}
                                 </div>
@@ -129,7 +235,7 @@ const Patients = () => {
                                     <label className="block text-sm font-medium text-gray-700 mb-1">Documento de Identidad</label>
                                     <input
                                         {...register("docId", { required: "El documento es requerido" })}
-                                        className={clsx("w-full border rounded-lg px-4 py-2 focus:ring-2 focus:ring-primary focus:border-transparent outline-none", errors.docId ? "border-red-500" : "border-gray-300")}
+                                        className={clsx("w-full border rounded-lg px-4 py-2 focus:ring-2 focus:ring-primary focus:border-transparent outline-none transition-all", errors.docId ? "border-red-500" : "border-gray-300")}
                                     />
                                     {errors.docId && <span className="text-red-500 text-xs mt-1">{errors.docId.message}</span>}
                                 </div>
@@ -139,7 +245,7 @@ const Patients = () => {
                                     <input
                                         type="email"
                                         {...register("email", { required: "El email es requerido", pattern: { value: /^\S+@\S+$/i, message: "Email inválido" } })}
-                                        className={clsx("w-full border rounded-lg px-4 py-2 focus:ring-2 focus:ring-primary focus:border-transparent outline-none", errors.email ? "border-red-500" : "border-gray-300")}
+                                        className={clsx("w-full border rounded-lg px-4 py-2 focus:ring-2 focus:ring-primary focus:border-transparent outline-none transition-all", errors.email ? "border-red-500" : "border-gray-300")}
                                     />
                                     {errors.email && <span className="text-red-500 text-xs mt-1">{errors.email.message}</span>}
                                 </div>
@@ -164,13 +270,13 @@ const Patients = () => {
                                     <button
                                         type="button"
                                         onClick={() => setShowForm(false)}
-                                        className="px-4 py-2 text-gray-600 hover:bg-gray-100 rounded-lg transition-colors"
+                                        className="px-4 py-2 text-gray-600 hover:bg-gray-100 rounded-lg transition-colors cursor-pointer"
                                     >
                                         Cancelar
                                     </button>
                                     <button
                                         type="submit"
-                                        className="bg-primary hover:bg-green-600 text-white px-6 py-2 rounded-lg shadow-md transition-colors font-medium flex items-center space-x-2"
+                                        className="bg-primary hover:bg-green-600 text-white px-6 py-2 rounded-lg shadow-md transition-colors font-medium flex items-center space-x-2 cursor-pointer"
                                     >
                                         <span>Guardar Paciente</span>
                                         <Check size={18} />

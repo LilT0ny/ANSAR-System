@@ -1,6 +1,6 @@
 import React from 'react';
 import { motion } from 'framer-motion';
-import { X } from 'lucide-react';
+import { X, Check } from 'lucide-react';
 import clsx from 'clsx';
 import useOdontogramStore from '../store/useOdontogramStore';
 
@@ -15,18 +15,13 @@ const Tooth = ({ id, number, onSelect, activeTool }) => {
         e.stopPropagation();
 
         if (activeTool !== 'select') {
-            // Toggle surface logic
             const currentSurfaces = toothData.surfaces || [];
             const hasCondition = currentSurfaces.includes(part);
+            let newSurfaces = hasCondition
+                ? currentSurfaces.filter(s => s !== part)
+                : [...currentSurfaces, part];
 
-            let newSurfaces;
-            if (hasCondition) {
-                newSurfaces = currentSurfaces.filter(s => s !== part);
-            } else {
-                newSurfaces = [...currentSurfaces, part];
-            }
-
-            updateTooth(id, { surfaces: newSurfaces, status: 'custom' }); // custom indicates mixed state
+            updateTooth(id, { surfaces: newSurfaces, status: 'custom' });
             return;
         }
 
@@ -34,55 +29,105 @@ const Tooth = ({ id, number, onSelect, activeTool }) => {
     };
 
     const getColor = (part) => {
-        if (toothData.surfaces?.includes(part)) return '#E2251D'; // Default red for surface issues
-
-        if (toothData.status === 'missing') return '#000000';
-        if (toothData.status === 'treated') return '#8CC63E';
-        if (toothData.status === 'caries') return '#E2251D';
-
-        return '#FFFFFF';
+        if (toothData.surfaces?.includes(part)) return '#E2251D'; // Caries/Issue
+        if (toothData.status === 'treated') return '#8CC63E';     // Treated entire tooth
+        if (toothData.status === 'caries') return '#E2251D';      // Caries entires tooth
+        if (toothData.status === 'missing') return '#00000000';   // Missing (handled differently)
+        return 'white';
     };
 
+    // If missing, show X over the whole area
+    const isMissing = toothData.status === 'missing';
+
     return (
-        <div className="flex flex-col items-center m-1 cursor-pointer">
-            <span className="text-xs text-secondary font-bold mb-1">{number}</span>
+        <div className="flex flex-col items-center m-1 cursor-pointer group">
+            <span className="text-xs text-secondary font-bold mb-1 font-sans">{number}</span>
+
             <motion.div
-                whileHover={{ scale: 1.05 }}
-                className={clsx("relative w-12 h-12 border-2 transition-all bg-white", isSelected ? "border-blue-500 shadow-lg ring-2 ring-blue-200" : "border-gray-200")}
+                whileHover={{ scale: 1.1 }}
+                whileTap={{ scale: 0.95 }}
+                className={clsx(
+                    "relative w-12 h-12 transition-all p-1", // 48x48
+                    isSelected && "ring-2 ring-primary rounded-lg shadow-lg"
+                )}
                 onClick={() => onSelect(id)}
             >
-                {/* Top (Vestibular) */}
-                <div
-                    onClick={(e) => handlePartClick(e, 'vestibular')}
-                    style={{ backgroundColor: getColor('vestibular') }}
-                    className="absolute top-0 left-1/4 w-1/2 h-1/4 border-b border-gray-200 hover:opacity-80 transition-colors"
-                ></div>
-                {/* Bottom (Lingual) */}
-                <div
-                    onClick={(e) => handlePartClick(e, 'lingual')}
-                    style={{ backgroundColor: getColor('lingual') }}
-                    className="absolute bottom-0 left-1/4 w-1/2 h-1/4 border-t border-gray-200 hover:opacity-80 transition-colors"
-                ></div>
-                {/* Left (Mesial) */}
-                <div
-                    onClick={(e) => handlePartClick(e, 'mesial')}
-                    style={{ backgroundColor: getColor('mesial') }}
-                    className="absolute left-0 top-1/4 w-1/4 h-1/2 border-r border-gray-200 hover:opacity-80 transition-colors"
-                ></div>
-                {/* Right (Distal) */}
-                <div
-                    onClick={(e) => handlePartClick(e, 'distal')}
-                    style={{ backgroundColor: getColor('distal') }}
-                    className="absolute right-0 top-1/4 w-1/4 h-1/2 border-l border-gray-200 hover:opacity-80 transition-colors"
-                ></div>
-                {/* Center (Oclusal) */}
-                <div
-                    onClick={(e) => handlePartClick(e, 'oclusal')}
-                    style={{ backgroundColor: getColor('oclusal') }}
-                    className="absolute top-1/4 left-1/4 w-1/2 h-1/2 flex items-center justify-center hover:bg-gray-50 transition-colors"
-                >
-                    {toothData.status === 'missing' && <X size={24} className="text-white" />}
-                </div>
+                {/* SVG Tooth Representation */}
+                <svg viewBox="0 0 100 100" className="w-full h-full drop-shadow-sm filter">
+                    {/* Definitions for gradients/effects */}
+                    <defs>
+                        <filter id="shadow">
+                            <feDropShadow dx="0" dy="1" stdDeviation="1" floodColor="#000000" floodOpacity="0.2" />
+                        </filter>
+                    </defs>
+
+                    {/* Background scaffold (gum/root context) if needed, otherwise just tooth */}
+
+                    {/* Vestibular (Top) */}
+                    <path
+                        d="M 15 15 L 85 15 L 70 30 L 30 30 Z"
+                        fill={getColor('vestibular')}
+                        stroke="#DBDBDB"
+                        strokeWidth="2"
+                        className="hover:opacity-80 transition-all cursor-pointer"
+                        onClick={(e) => handlePartClick(e, 'vestibular')}
+                    />
+
+                    {/* Distal (Right) */}
+                    <path
+                        d="M 85 15 L 85 85 L 70 70 L 70 30 Z"
+                        fill={getColor('distal')}
+                        stroke="#DBDBDB"
+                        strokeWidth="2"
+                        className="hover:opacity-80 transition-all cursor-pointer"
+                        onClick={(e) => handlePartClick(e, 'distal')}
+                    />
+
+                    {/* Lingual (Bottom) */}
+                    <path
+                        d="M 85 85 L 15 85 L 30 70 L 70 70 Z"
+                        fill={getColor('lingual')}
+                        stroke="#DBDBDB"
+                        strokeWidth="2"
+                        className="hover:opacity-80 transition-all cursor-pointer"
+                        onClick={(e) => handlePartClick(e, 'lingual')}
+                    />
+
+                    {/* Mesial (Left) */}
+                    <path
+                        d="M 15 85 L 15 15 L 30 30 L 30 70 Z"
+                        fill={getColor('mesial')}
+                        stroke="#DBDBDB"
+                        strokeWidth="2"
+                        className="hover:opacity-80 transition-all cursor-pointer"
+                        onClick={(e) => handlePartClick(e, 'mesial')}
+                    />
+
+                    {/* Oclusal (Center) */}
+                    <rect
+                        x="30" y="30" width="40" height="40"
+                        fill={getColor('oclusal')}
+                        stroke="#DBDBDB"
+                        strokeWidth="2"
+                        className="hover:opacity-80 transition-all cursor-pointer"
+                        onClick={(e) => handlePartClick(e, 'oclusal')}
+                    />
+
+                    {/* Missing Overlay */}
+                    {isMissing && (
+                        <line x1="10" y1="10" x2="90" y2="90" stroke="#6D6E72" strokeWidth="8" strokeLinecap="round" />
+                    )}
+                    {isMissing && (
+                        <line x1="90" y1="10" x2="10" y2="90" stroke="#6D6E72" strokeWidth="8" strokeLinecap="round" />
+                    )}
+                </svg>
+
+                {/* Treated Indicator (e.g. checkmark icon if fully treated) */}
+                {toothData.status === 'treated' && !isMissing && (
+                    <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+                        <Check className="text-white drop-shadow-md" size={24} strokeWidth={3} />
+                    </div>
+                )}
             </motion.div>
         </div>
     );

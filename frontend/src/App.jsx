@@ -8,6 +8,7 @@ import Appointments from './pages/Appointments';
 import Settings from './pages/Settings';
 import LandingPage from './pages/LandingPage';
 import Login from './pages/Login';
+import Booking from './pages/Booking';
 import AdminLayout from './layouts/AdminLayout';
 
 function App() {
@@ -18,12 +19,13 @@ function App() {
                     {/* Public Route */}
                     <Route path="/" element={<LandingPage />} />
                     <Route path="/login" element={<Login />} />
+                    <Route path="/reserva" element={<Booking />} />
 
                     {/* Admin Routes (Wrapped in Layout) */}
                     <Route element={<AdminLayout />}>
                         <Route path="/dashboard" element={<Dashboard />} />
                         <Route path="/pacientes" element={<Patients />} />
-                        <Route path="/historia" element={<ClinicalHistory />} />
+                        <Route path="/historia/:id?" element={<ClinicalHistory />} />
                         <Route path="/analytics" element={<Analytics />} />
                         <Route path="/citas" element={<Appointments />} />
                         <Route path="/configuracion" element={<Settings />} />

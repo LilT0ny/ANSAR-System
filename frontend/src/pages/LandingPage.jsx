@@ -1,10 +1,10 @@
-import React, { useState } from 'react';
+import React from 'react';
 import { motion } from 'framer-motion';
 import { Calendar, CheckCircle, Clock, MapPin, Phone, Star } from 'lucide-react';
-import BookingWidget from '../components/BookingWidget';
+import { useNavigate } from 'react-router-dom';
 
 const LandingPage = () => {
-    const [showBooking, setShowBooking] = useState(false);
+    const navigate = useNavigate();
 
     return (
         <div className="font-sans text-secondary">
@@ -23,8 +23,8 @@ const LandingPage = () => {
                             Acceso Doctor
                         </a>
                         <button
-                            onClick={() => setShowBooking(true)}
-                            className="bg-primary hover:bg-green-600 text-white px-6 py-2 rounded-full font-medium transition-transform transform hover:scale-105 shadow-lg"
+                            onClick={() => navigate('/reserva')}
+                            className="bg-primary hover:bg-green-600 text-white px-6 py-2 rounded-full font-medium transition-transform transform hover:scale-105 shadow-lg cursor-pointer"
                         >
                             Agendar Cita
                         </button>
@@ -54,8 +54,8 @@ const LandingPage = () => {
                             Resultados estéticos y funcionales garantizados.
                         </motion.p>
                         <button
-                            onClick={() => setShowBooking(true)}
-                            className="bg-primary hover:bg-green-600 text-white px-8 py-4 rounded-full text-lg font-medium shadow-xl hover:shadow-2xl transition-all flex items-center"
+                            onClick={() => navigate('/reserva')}
+                            className="bg-primary hover:bg-green-600 text-white px-8 py-4 rounded-full text-lg font-medium shadow-xl hover:shadow-2xl transition-all flex items-center cursor-pointer"
                         >
                             <Calendar className="mr-2" />
                             Reserva tu Cita Online
@@ -158,8 +158,7 @@ const LandingPage = () => {
                 </div>
             </footer>
 
-            {/* Booking Widget Modal */}
-            {showBooking && <BookingWidget onClose={() => setShowBooking(false)} />}
+
         </div>
     );
 };
