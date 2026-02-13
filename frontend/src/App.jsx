@@ -9,6 +9,8 @@ import Settings from './pages/Settings';
 import LandingPage from './pages/LandingPage';
 import Login from './pages/Login';
 import Booking from './pages/Booking';
+import Billing from './pages/Billing';
+import FinanceDashboard from './pages/FinanceDashboard';
 import AdminLayout from './layouts/AdminLayout';
 
 function App() {
@@ -28,6 +30,8 @@ function App() {
                         <Route path="/historia/:id?" element={<ClinicalHistory />} />
                         <Route path="/analytics" element={<Analytics />} />
                         <Route path="/citas" element={<Appointments />} />
+                        <Route path="/facturacion" element={<Billing />} />
+                        <Route path="/finanzas" element={<FinanceDashboard />} />
                         <Route path="/configuracion" element={<Settings />} />
                     </Route>
                 </Routes>

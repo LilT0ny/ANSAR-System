@@ -1,6 +1,6 @@
 import React from 'react';
 import { NavLink, useNavigate } from 'react-router-dom';
-import { Home, User, Calendar, FileText, Settings, LogOut, TrendingUp } from 'lucide-react';
+import { Home, User, Calendar, FileText, Settings, LogOut, TrendingUp, Receipt, BarChart3 } from 'lucide-react';
 import clsx from 'clsx';
 
 const Sidebar = () => {
@@ -11,6 +11,8 @@ const Sidebar = () => {
         { name: 'Pacientes', path: '/pacientes', icon: User },
         { name: 'Citas', path: '/citas', icon: Calendar },
         { name: 'Historia Clínica', path: '/historia', icon: FileText },
+        { name: 'Facturación', path: '/facturacion', icon: Receipt },
+        { name: 'Finanzas', path: '/finanzas', icon: BarChart3 },
         { name: 'Analítica', path: '/analytics', icon: TrendingUp },
         { name: 'Configuración', path: '/configuracion', icon: Settings },
     ];
