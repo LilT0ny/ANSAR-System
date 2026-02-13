@@ -128,6 +128,7 @@ const Odontogram = ({ patientId, readOnly = false }) => {
                     {!readOnly && (
                         <div className="flex items-center gap-2">
                             <button
+                                type="button"
                                 onClick={handleReset}
                                 className="text-gray-400 hover:text-red-500 p-2 rounded-lg hover:bg-red-50 transition-all"
                                 title="Reiniciar odontograma"
@@ -135,6 +136,7 @@ const Odontogram = ({ patientId, readOnly = false }) => {
                                 <RotateCcw size={18} />
                             </button>
                             <button
+                                type="button"
                                 onClick={handleSave}
                                 className="bg-primary hover:bg-green-600 text-white px-4 py-2 rounded-lg font-bold text-sm flex items-center gap-2 transition-all shadow-sm hover:shadow-md"
                             >
@@ -151,6 +153,7 @@ const Odontogram = ({ patientId, readOnly = false }) => {
                         <div className="flex flex-wrap items-center gap-1.5 bg-gray-50 p-2 rounded-xl border border-gray-200">
                             {TOOLS.map(tool => (
                                 <button
+                                    type="button"
                                     key={tool.id}
                                     onClick={() => setCurrentTool(tool.id)}
                                     className={clsx(
@@ -307,6 +310,7 @@ const Odontogram = ({ patientId, readOnly = false }) => {
                                 </p>
                             </div>
                             <button
+                                type="button"
                                 onClick={() => selectTooth(null)}
                                 className="text-gray-400 hover:text-gray-600 p-1 hover:bg-gray-100 rounded-lg transition-colors"
                             >
@@ -338,12 +342,14 @@ const Odontogram = ({ patientId, readOnly = false }) => {
                                 {/* Quick actions */}
                                 <div className="flex gap-2 mt-3 pt-3 border-t border-gray-100">
                                     <button
+                                        type="button"
                                         onClick={() => { updateToothStatus(selectedTooth, 'treated'); toast('Diente marcado como tratado.'); }}
                                         className="flex-1 text-xs bg-green-50 text-green-600 hover:bg-green-100 py-1.5 rounded-lg font-bold transition-colors border border-green-200"
                                     >
                                         ✓ Marcar Tratado
                                     </button>
                                     <button
+                                        type="button"
                                         onClick={() => { updateToothStatus(selectedTooth, 'healthy'); toast('Diente restaurado a sano.'); }}
                                         className="flex-1 text-xs bg-gray-50 text-gray-500 hover:bg-gray-100 py-1.5 rounded-lg font-bold transition-colors border border-gray-200"
                                     >
@@ -363,6 +369,7 @@ const Odontogram = ({ patientId, readOnly = false }) => {
                                     rows={4}
                                 />
                                 <button
+                                    type="button"
                                     onClick={saveNotes}
                                     className="w-full mt-2 bg-primary hover:bg-green-600 text-white text-sm py-2 rounded-lg font-bold transition-all flex items-center justify-center gap-2 shadow-sm"
                                 >

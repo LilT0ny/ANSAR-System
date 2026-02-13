@@ -12,7 +12,7 @@ const Dashboard = () => {
     ];
 
     return (
-        <div className="space-y-8 p-8 bg-gray-50 min-h-screen font-sans">
+        <div className="space-y-8">
             {/* Header */}
             <header className="flex flex-col md:flex-row md:items-center justify-between gap-4">
                 <div>
@@ -78,8 +78,8 @@ const Dashboard = () => {
                                 <div className="text-right">
                                     <p className="text-sm font-bold text-gray-700">{appt.time}</p>
                                     <span className={`text-[10px] px-2 py-0.5 rounded-full ${appt.status === 'Confirmada' ? 'bg-blue-100 text-blue-600' :
-                                            appt.status === 'Pendiente' ? 'bg-yellow-100 text-yellow-600' :
-                                                'bg-green-100 text-green-600'
+                                        appt.status === 'Pendiente' ? 'bg-yellow-100 text-yellow-600' :
+                                            'bg-green-100 text-green-600'
                                         }`}>
                                         {appt.status}
                                     </span>

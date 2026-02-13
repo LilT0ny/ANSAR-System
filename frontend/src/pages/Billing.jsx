@@ -254,322 +254,320 @@ const Billing = () => {
 
     // ── Render ───────────────────────────────────────────────────────
     return (
-        <div className="bg-gray-50 min-h-screen pb-12">
-            <div className="p-8 max-w-7xl mx-auto">
-                {/* Header */}
-                <header className="mb-8">
-                    <h1 className="text-3xl font-serif font-bold text-gray-800 flex items-center gap-3">
-                        <FileText className="text-primary" size={28} />
-                        Facturación por Paciente
-                    </h1>
-                    <p className="text-secondary mt-1">Genera facturas detalladas, aplica descuentos, y descarga en PDF.</p>
-                </header>
+        <div className="space-y-8">
+            {/* Header */}
+            <header>
+                <h1 className="text-3xl font-serif font-bold text-gray-800 flex items-center gap-3">
+                    <FileText className="text-primary" size={28} />
+                    Facturación por Paciente
+                </h1>
+                <p className="text-secondary mt-1">Genera facturas detalladas, aplica descuentos, y descarga en PDF.</p>
+            </header>
 
-                <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
 
-                    {/* ─── LEFT COLUMN: Patient & Treatments ──────────── */}
-                    <div className="lg:col-span-2 space-y-6">
+                {/* ─── LEFT COLUMN: Patient & Treatments ──────────── */}
+                <div className="lg:col-span-2 space-y-6">
 
-                        {/* Patient Selector */}
-                        <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
-                            <h2 className="text-lg font-serif font-bold text-gray-800 mb-4 flex items-center gap-2">
-                                <User className="text-primary" size={20} /> Seleccionar Paciente
-                            </h2>
-                            <div className="relative">
-                                <div className="flex items-center border border-gray-200 rounded-lg px-4 py-3 focus-within:ring-2 focus-within:ring-primary/30 focus-within:border-primary transition-all">
-                                    <Search className="text-gray-400 mr-3" size={18} />
-                                    <input
-                                        type="text"
-                                        placeholder="Buscar paciente por nombre o cédula..."
-                                        className="flex-1 outline-none text-gray-700 placeholder-gray-400 font-sans"
-                                        value={selectedPatient ? `${selectedPatient.firstName} ${selectedPatient.lastName}` : patientSearch}
-                                        onChange={(e) => { setPatientSearch(e.target.value); setShowPatientDropdown(true); setSelectedPatient(null); }}
-                                        onFocus={() => setShowPatientDropdown(true)}
-                                    />
-                                    {selectedPatient && (
-                                        <button onClick={() => { setSelectedPatient(null); setInvoiceItems([]); }} className="text-gray-400 hover:text-red-500">
-                                            <X size={18} />
+                    {/* Patient Selector */}
+                    <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
+                        <h2 className="text-lg font-serif font-bold text-gray-800 mb-4 flex items-center gap-2">
+                            <User className="text-primary" size={20} /> Seleccionar Paciente
+                        </h2>
+                        <div className="relative">
+                            <div className="flex items-center border border-gray-200 rounded-lg px-4 py-3 focus-within:ring-2 focus-within:ring-primary/30 focus-within:border-primary transition-all">
+                                <Search className="text-gray-400 mr-3" size={18} />
+                                <input
+                                    type="text"
+                                    placeholder="Buscar paciente por nombre o cédula..."
+                                    className="flex-1 outline-none text-gray-700 placeholder-gray-400 font-sans"
+                                    value={selectedPatient ? `${selectedPatient.firstName} ${selectedPatient.lastName}` : patientSearch}
+                                    onChange={(e) => { setPatientSearch(e.target.value); setShowPatientDropdown(true); setSelectedPatient(null); }}
+                                    onFocus={() => setShowPatientDropdown(true)}
+                                />
+                                {selectedPatient && (
+                                    <button onClick={() => { setSelectedPatient(null); setInvoiceItems([]); }} className="text-gray-400 hover:text-red-500">
+                                        <X size={18} />
+                                    </button>
+                                )}
+                            </div>
+                            {showPatientDropdown && !selectedPatient && (
+                                <div className="absolute z-20 mt-1 w-full bg-white border border-gray-200 rounded-xl shadow-lg max-h-48 overflow-y-auto">
+                                    {filteredPatients.length === 0 ? (
+                                        <div className="px-4 py-3 text-gray-400 text-sm">No se encontraron pacientes.</div>
+                                    ) : filteredPatients.map(p => (
+                                        <button
+                                            key={p.id}
+                                            onClick={() => selectPatient(p)}
+                                            className="w-full text-left px-4 py-3 hover:bg-primary/5 flex items-center gap-3 transition-colors border-b border-gray-50 last:border-0"
+                                        >
+                                            <div className="h-9 w-9 rounded-full bg-primary/10 text-primary flex items-center justify-center font-bold text-xs">
+                                                {p.firstName[0]}{p.lastName[0]}
+                                            </div>
+                                            <div>
+                                                <p className="font-semibold text-gray-800 text-sm">{p.firstName} {p.lastName}</p>
+                                                <p className="text-xs text-gray-400">Cédula: {p.docId}</p>
+                                            </div>
                                         </button>
-                                    )}
-                                </div>
-                                {showPatientDropdown && !selectedPatient && (
-                                    <div className="absolute z-20 mt-1 w-full bg-white border border-gray-200 rounded-xl shadow-lg max-h-48 overflow-y-auto">
-                                        {filteredPatients.length === 0 ? (
-                                            <div className="px-4 py-3 text-gray-400 text-sm">No se encontraron pacientes.</div>
-                                        ) : filteredPatients.map(p => (
-                                            <button
-                                                key={p.id}
-                                                onClick={() => selectPatient(p)}
-                                                className="w-full text-left px-4 py-3 hover:bg-primary/5 flex items-center gap-3 transition-colors border-b border-gray-50 last:border-0"
-                                            >
-                                                <div className="h-9 w-9 rounded-full bg-primary/10 text-primary flex items-center justify-center font-bold text-xs">
-                                                    {p.firstName[0]}{p.lastName[0]}
-                                                </div>
-                                                <div>
-                                                    <p className="font-semibold text-gray-800 text-sm">{p.firstName} {p.lastName}</p>
-                                                    <p className="text-xs text-gray-400">Cédula: {p.docId}</p>
-                                                </div>
-                                            </button>
-                                        ))}
-                                    </div>
-                                )}
-                            </div>
-                        </div>
-
-                        {/* Import from Treatments */}
-                        {selectedPatient && (
-                            <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
-                                <button
-                                    onClick={() => setShowTreatments(!showTreatments)}
-                                    className="w-full flex items-center justify-between text-left"
-                                >
-                                    <h2 className="text-lg font-serif font-bold text-gray-800 flex items-center gap-2">
-                                        <ClipboardList className="text-primary" size={20} />
-                                        Tratamientos de Historia Clínica
-                                    </h2>
-                                    <ChevronDown className={`text-gray-400 transform transition-transform ${showTreatments ? 'rotate-180' : ''}`} size={20} />
-                                </button>
-                                {showTreatments && (
-                                    <div className="mt-4 space-y-2 animate-in slide-in-from-top-2 duration-200">
-                                        {availableTreatments.length === 0 ? (
-                                            <p className="text-gray-400 text-sm text-center py-4">No hay tratamientos registrados.</p>
-                                        ) : availableTreatments.map(t => {
-                                            const alreadyAdded = invoiceItems.some(i => i.treatmentId === t.id);
-                                            return (
-                                                <div
-                                                    key={t.id}
-                                                    className={`flex items-center justify-between p-3 rounded-lg border transition-all ${alreadyAdded ? 'bg-green-50/50 border-green-200' : 'border-gray-100 hover:border-primary/30 hover:bg-primary/5'}`}
-                                                >
-                                                    <div>
-                                                        <p className="font-medium text-gray-800 text-sm">{t.name}</p>
-                                                        <p className="text-xs text-gray-400">{t.date} · ${t.price.toFixed(2)}</p>
-                                                    </div>
-                                                    <button
-                                                        onClick={() => addTreatmentToInvoice(t)}
-                                                        disabled={alreadyAdded}
-                                                        className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${alreadyAdded
-                                                            ? 'bg-green-100 text-green-600 cursor-default'
-                                                            : 'bg-primary/10 text-primary hover:bg-primary hover:text-white cursor-pointer'}`}
-                                                    >
-                                                        {alreadyAdded ? '✓ Añadido' : '+ Agregar'}
-                                                    </button>
-                                                </div>
-                                            );
-                                        })}
-                                    </div>
-                                )}
-                            </div>
-                        )}
-
-                        {/* Invoice Items Table */}
-                        <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
-                            <div className="flex items-center justify-between mb-4">
-                                <h2 className="text-lg font-serif font-bold text-gray-800 flex items-center gap-2">
-                                    <Package className="text-primary" size={20} />
-                                    Detalle de Factura
-                                </h2>
-                                <button
-                                    onClick={addCustomItem}
-                                    className="bg-primary/10 hover:bg-primary text-primary hover:text-white px-4 py-2 rounded-lg text-sm font-bold transition-all flex items-center gap-2"
-                                >
-                                    <Plus size={16} /> Ítem Manual
-                                </button>
-                            </div>
-
-                            {invoiceItems.length === 0 ? (
-                                <div className="text-center py-12 text-gray-400">
-                                    <FileText size={48} className="mx-auto mb-3 opacity-30" />
-                                    <p className="font-medium">Sin ítems agregados</p>
-                                    <p className="text-xs mt-1">Selecciona tratamientos o agrega ítems manualmente.</p>
-                                </div>
-                            ) : (
-                                <div className="overflow-x-auto">
-                                    <table className="w-full text-sm">
-                                        <thead>
-                                            <tr className="text-gray-500 text-xs font-medium border-b border-gray-100">
-                                                <th className="pb-3 text-left w-1/2">Descripción</th>
-                                                <th className="pb-3 text-center w-20">Cant.</th>
-                                                <th className="pb-3 text-right w-28">Precio Unit.</th>
-                                                <th className="pb-3 text-right w-28">Total</th>
-                                                <th className="pb-3 w-12"></th>
-                                            </tr>
-                                        </thead>
-                                        <tbody className="divide-y divide-gray-50">
-                                            {invoiceItems.map(item => (
-                                                <tr key={item.id} className="group hover:bg-gray-50/50 transition-colors">
-                                                    <td className="py-3 pr-3">
-                                                        <input
-                                                            type="text"
-                                                            value={item.description}
-                                                            onChange={(e) => updateItem(item.id, 'description', e.target.value)}
-                                                            className="w-full bg-transparent border-b border-transparent focus:border-primary outline-none py-1 transition-colors text-gray-800"
-                                                            placeholder="Descripción..."
-                                                        />
-                                                    </td>
-                                                    <td className="py-3 text-center">
-                                                        <input
-                                                            type="number"
-                                                            min="1"
-                                                            value={item.qty}
-                                                            onChange={(e) => updateItem(item.id, 'qty', e.target.value)}
-                                                            className="w-16 text-center bg-gray-50 border border-gray-200 rounded-lg py-1 focus:ring-2 focus:ring-primary/30 outline-none"
-                                                        />
-                                                    </td>
-                                                    <td className="py-3 text-right">
-                                                        <div className="flex items-center justify-end">
-                                                            <span className="text-gray-400 mr-1">$</span>
-                                                            <input
-                                                                type="number"
-                                                                min="0"
-                                                                step="0.01"
-                                                                value={item.price}
-                                                                onChange={(e) => updateItem(item.id, 'price', e.target.value)}
-                                                                className="w-24 text-right bg-gray-50 border border-gray-200 rounded-lg py-1 px-2 focus:ring-2 focus:ring-primary/30 outline-none"
-                                                            />
-                                                        </div>
-                                                    </td>
-                                                    <td className="py-3 text-right font-semibold text-gray-800 font-serif">
-                                                        ${(item.price * item.qty).toFixed(2)}
-                                                    </td>
-                                                    <td className="py-3 text-center">
-                                                        <button
-                                                            onClick={() => removeItem(item.id)}
-                                                            className="text-gray-300 hover:text-red-500 transition-colors opacity-0 group-hover:opacity-100"
-                                                        >
-                                                            <Trash2 size={16} />
-                                                        </button>
-                                                    </td>
-                                                </tr>
-                                            ))}
-                                        </tbody>
-                                    </table>
+                                    ))}
                                 </div>
                             )}
                         </div>
                     </div>
 
-                    {/* ─── RIGHT COLUMN: Summary & Actions ────────────── */}
-                    <div className="space-y-6">
+                    {/* Import from Treatments */}
+                    {selectedPatient && (
+                        <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
+                            <button
+                                onClick={() => setShowTreatments(!showTreatments)}
+                                className="w-full flex items-center justify-between text-left"
+                            >
+                                <h2 className="text-lg font-serif font-bold text-gray-800 flex items-center gap-2">
+                                    <ClipboardList className="text-primary" size={20} />
+                                    Tratamientos de Historia Clínica
+                                </h2>
+                                <ChevronDown className={`text-gray-400 transform transition-transform ${showTreatments ? 'rotate-180' : ''}`} size={20} />
+                            </button>
+                            {showTreatments && (
+                                <div className="mt-4 space-y-2 animate-in slide-in-from-top-2 duration-200">
+                                    {availableTreatments.length === 0 ? (
+                                        <p className="text-gray-400 text-sm text-center py-4">No hay tratamientos registrados.</p>
+                                    ) : availableTreatments.map(t => {
+                                        const alreadyAdded = invoiceItems.some(i => i.treatmentId === t.id);
+                                        return (
+                                            <div
+                                                key={t.id}
+                                                className={`flex items-center justify-between p-3 rounded-lg border transition-all ${alreadyAdded ? 'bg-green-50/50 border-green-200' : 'border-gray-100 hover:border-primary/30 hover:bg-primary/5'}`}
+                                            >
+                                                <div>
+                                                    <p className="font-medium text-gray-800 text-sm">{t.name}</p>
+                                                    <p className="text-xs text-gray-400">{t.date} · ${t.price.toFixed(2)}</p>
+                                                </div>
+                                                <button
+                                                    onClick={() => addTreatmentToInvoice(t)}
+                                                    disabled={alreadyAdded}
+                                                    className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${alreadyAdded
+                                                        ? 'bg-green-100 text-green-600 cursor-default'
+                                                        : 'bg-primary/10 text-primary hover:bg-primary hover:text-white cursor-pointer'}`}
+                                                >
+                                                    {alreadyAdded ? '✓ Añadido' : '+ Agregar'}
+                                                </button>
+                                            </div>
+                                        );
+                                    })}
+                                </div>
+                            )}
+                        </div>
+                    )}
 
-                        {/* Financial Summary Card */}
-                        <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6 sticky top-20">
-                            <h2 className="text-lg font-serif font-bold text-gray-800 mb-5 flex items-center gap-2">
-                                <DollarSign className="text-primary" size={20} /> Resumen
+                    {/* Invoice Items Table */}
+                    <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
+                        <div className="flex items-center justify-between mb-4">
+                            <h2 className="text-lg font-serif font-bold text-gray-800 flex items-center gap-2">
+                                <Package className="text-primary" size={20} />
+                                Detalle de Factura
                             </h2>
-
-                            {/* Tax Rate */}
-                            <div className="mb-4">
-                                <label className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1 block">IVA (%)</label>
-                                <div className="flex items-center gap-2">
-                                    <Percent size={14} className="text-gray-400" />
-                                    <input
-                                        type="number"
-                                        min="0"
-                                        max="100"
-                                        value={taxRate}
-                                        onChange={(e) => setTaxRate(Number(e.target.value))}
-                                        className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-primary/30 outline-none"
-                                    />
-                                </div>
-                            </div>
-
-                            {/* Discount */}
-                            <div className="mb-6">
-                                <label className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1 block">Descuento ($)</label>
-                                <div className="flex items-center gap-2">
-                                    <DollarSign size={14} className="text-gray-400" />
-                                    <input
-                                        type="number"
-                                        min="0"
-                                        value={globalDiscount}
-                                        onChange={(e) => setGlobalDiscount(Number(e.target.value))}
-                                        className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-primary/30 outline-none"
-                                    />
-                                </div>
-                            </div>
-
-                            {/* Breakdown */}
-                            <div className="space-y-3 border-t border-gray-100 pt-4">
-                                <div className="flex justify-between text-sm text-gray-500">
-                                    <span>Subtotal</span>
-                                    <span className="font-serif font-semibold text-gray-700">${subtotal.toFixed(2)}</span>
-                                </div>
-                                <div className="flex justify-between text-sm text-gray-500">
-                                    <span>Descuento</span>
-                                    <span className="font-serif font-semibold text-red-500">-${globalDiscount.toFixed(2)}</span>
-                                </div>
-                                <div className="flex justify-between text-sm text-gray-500">
-                                    <span>IVA ({taxRate}%)</span>
-                                    <span className="font-serif font-semibold text-gray-700">${taxAmount.toFixed(2)}</span>
-                                </div>
-                                <div className="flex justify-between items-center border-t border-dashed border-gray-200 pt-3">
-                                    <span className="text-base font-bold text-gray-800">TOTAL</span>
-                                    <span className="text-2xl font-serif font-bold text-primary">${total.toFixed(2)}</span>
-                                </div>
-                            </div>
-
-                            {/* Payment Method */}
-                            <div className="mt-6">
-                                <label className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2 block">Método de Pago</label>
-                                <div className="grid grid-cols-3 gap-2">
-                                    {PAYMENT_METHODS.map(m => (
-                                        <button
-                                            key={m.id}
-                                            onClick={() => setPaymentMethod(m.id)}
-                                            className={`flex flex-col items-center gap-1 p-3 rounded-xl border-2 text-xs font-medium transition-all ${paymentMethod === m.id
-                                                ? 'border-primary bg-primary/5 text-primary shadow-sm'
-                                                : 'border-gray-100 text-gray-400 hover:border-gray-300'}`}
-                                        >
-                                            <m.icon size={18} />
-                                            {m.label}
-                                        </button>
-                                    ))}
-                                </div>
-                            </div>
-
-                            {/* Action Buttons */}
-                            <div className="mt-6 space-y-3">
-                                <button
-                                    onClick={() => {
-                                        if (!selectedPatient || invoiceItems.length === 0) {
-                                            toast('Selecciona un paciente y agrega ítems.');
-                                            return;
-                                        }
-                                        setShowPreview(true);
-                                    }}
-                                    className="w-full bg-gray-800 hover:bg-gray-900 text-white py-3 rounded-xl font-bold flex items-center justify-center gap-2 transition-all shadow-md hover:shadow-lg"
-                                >
-                                    <Eye size={18} /> Vista Previa
-                                </button>
-
-                                <button
-                                    onClick={handleFinalize}
-                                    disabled={!selectedPatient || invoiceItems.length === 0}
-                                    className="w-full bg-primary hover:bg-green-600 disabled:bg-gray-200 disabled:text-gray-400 text-white py-3 rounded-xl font-bold flex items-center justify-center gap-2 transition-all shadow-md hover:shadow-lg disabled:shadow-none disabled:cursor-not-allowed"
-                                >
-                                    <Download size={18} /> Guardar & Descargar PDF
-                                </button>
-                            </div>
+                            <button
+                                onClick={addCustomItem}
+                                className="bg-primary/10 hover:bg-primary text-primary hover:text-white px-4 py-2 rounded-lg text-sm font-bold transition-all flex items-center gap-2"
+                            >
+                                <Plus size={16} /> Ítem Manual
+                            </button>
                         </div>
 
-                        {/* Recent Invoices */}
-                        {savedInvoices.length > 0 && (
-                            <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
-                                <h3 className="text-sm font-serif font-bold text-gray-800 mb-3">Facturas Recientes</h3>
-                                <div className="space-y-2">
-                                    {savedInvoices.slice(0, 5).map(inv => (
-                                        <div key={inv.id} className="flex items-center justify-between p-2 rounded-lg hover:bg-gray-50 transition-colors">
-                                            <div>
-                                                <p className="text-sm font-semibold text-gray-700">{inv.patient.firstName} {inv.patient.lastName}</p>
-                                                <p className="text-xs text-gray-400">{new Date(inv.date).toLocaleDateString('es-ES')}</p>
-                                            </div>
-                                            <span className="font-serif font-bold text-primary text-sm">${inv.total.toFixed(2)}</span>
-                                        </div>
-                                    ))}
-                                </div>
+                        {invoiceItems.length === 0 ? (
+                            <div className="text-center py-12 text-gray-400">
+                                <FileText size={48} className="mx-auto mb-3 opacity-30" />
+                                <p className="font-medium">Sin ítems agregados</p>
+                                <p className="text-xs mt-1">Selecciona tratamientos o agrega ítems manualmente.</p>
+                            </div>
+                        ) : (
+                            <div className="overflow-x-auto">
+                                <table className="w-full text-sm">
+                                    <thead>
+                                        <tr className="text-gray-500 text-xs font-medium border-b border-gray-100">
+                                            <th className="pb-3 text-left w-1/2">Descripción</th>
+                                            <th className="pb-3 text-center w-20">Cant.</th>
+                                            <th className="pb-3 text-right w-28">Precio Unit.</th>
+                                            <th className="pb-3 text-right w-28">Total</th>
+                                            <th className="pb-3 w-12"></th>
+                                        </tr>
+                                    </thead>
+                                    <tbody className="divide-y divide-gray-50">
+                                        {invoiceItems.map(item => (
+                                            <tr key={item.id} className="group hover:bg-gray-50/50 transition-colors">
+                                                <td className="py-3 pr-3">
+                                                    <input
+                                                        type="text"
+                                                        value={item.description}
+                                                        onChange={(e) => updateItem(item.id, 'description', e.target.value)}
+                                                        className="w-full bg-transparent border-b border-transparent focus:border-primary outline-none py-1 transition-colors text-gray-800"
+                                                        placeholder="Descripción..."
+                                                    />
+                                                </td>
+                                                <td className="py-3 text-center">
+                                                    <input
+                                                        type="number"
+                                                        min="1"
+                                                        value={item.qty}
+                                                        onChange={(e) => updateItem(item.id, 'qty', e.target.value)}
+                                                        className="w-16 text-center bg-gray-50 border border-gray-200 rounded-lg py-1 focus:ring-2 focus:ring-primary/30 outline-none"
+                                                    />
+                                                </td>
+                                                <td className="py-3 text-right">
+                                                    <div className="flex items-center justify-end">
+                                                        <span className="text-gray-400 mr-1">$</span>
+                                                        <input
+                                                            type="number"
+                                                            min="0"
+                                                            step="0.01"
+                                                            value={item.price}
+                                                            onChange={(e) => updateItem(item.id, 'price', e.target.value)}
+                                                            className="w-24 text-right bg-gray-50 border border-gray-200 rounded-lg py-1 px-2 focus:ring-2 focus:ring-primary/30 outline-none"
+                                                        />
+                                                    </div>
+                                                </td>
+                                                <td className="py-3 text-right font-semibold text-gray-800 font-serif">
+                                                    ${(item.price * item.qty).toFixed(2)}
+                                                </td>
+                                                <td className="py-3 text-center">
+                                                    <button
+                                                        onClick={() => removeItem(item.id)}
+                                                        className="text-gray-300 hover:text-red-500 transition-colors opacity-0 group-hover:opacity-100"
+                                                    >
+                                                        <Trash2 size={16} />
+                                                    </button>
+                                                </td>
+                                            </tr>
+                                        ))}
+                                    </tbody>
+                                </table>
                             </div>
                         )}
                     </div>
+                </div>
+
+                {/* ─── RIGHT COLUMN: Summary & Actions ────────────── */}
+                <div className="space-y-6">
+
+                    {/* Financial Summary Card */}
+                    <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6 sticky top-20">
+                        <h2 className="text-lg font-serif font-bold text-gray-800 mb-5 flex items-center gap-2">
+                            <DollarSign className="text-primary" size={20} /> Resumen
+                        </h2>
+
+                        {/* Tax Rate */}
+                        <div className="mb-4">
+                            <label className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1 block">IVA (%)</label>
+                            <div className="flex items-center gap-2">
+                                <Percent size={14} className="text-gray-400" />
+                                <input
+                                    type="number"
+                                    min="0"
+                                    max="100"
+                                    value={taxRate}
+                                    onChange={(e) => setTaxRate(Number(e.target.value))}
+                                    className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-primary/30 outline-none"
+                                />
+                            </div>
+                        </div>
+
+                        {/* Discount */}
+                        <div className="mb-6">
+                            <label className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1 block">Descuento ($)</label>
+                            <div className="flex items-center gap-2">
+                                <DollarSign size={14} className="text-gray-400" />
+                                <input
+                                    type="number"
+                                    min="0"
+                                    value={globalDiscount}
+                                    onChange={(e) => setGlobalDiscount(Number(e.target.value))}
+                                    className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-primary/30 outline-none"
+                                />
+                            </div>
+                        </div>
+
+                        {/* Breakdown */}
+                        <div className="space-y-3 border-t border-gray-100 pt-4">
+                            <div className="flex justify-between text-sm text-gray-500">
+                                <span>Subtotal</span>
+                                <span className="font-serif font-semibold text-gray-700">${subtotal.toFixed(2)}</span>
+                            </div>
+                            <div className="flex justify-between text-sm text-gray-500">
+                                <span>Descuento</span>
+                                <span className="font-serif font-semibold text-red-500">-${globalDiscount.toFixed(2)}</span>
+                            </div>
+                            <div className="flex justify-between text-sm text-gray-500">
+                                <span>IVA ({taxRate}%)</span>
+                                <span className="font-serif font-semibold text-gray-700">${taxAmount.toFixed(2)}</span>
+                            </div>
+                            <div className="flex justify-between items-center border-t border-dashed border-gray-200 pt-3">
+                                <span className="text-base font-bold text-gray-800">TOTAL</span>
+                                <span className="text-2xl font-serif font-bold text-primary">${total.toFixed(2)}</span>
+                            </div>
+                        </div>
+
+                        {/* Payment Method */}
+                        <div className="mt-6">
+                            <label className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2 block">Método de Pago</label>
+                            <div className="grid grid-cols-3 gap-2">
+                                {PAYMENT_METHODS.map(m => (
+                                    <button
+                                        key={m.id}
+                                        onClick={() => setPaymentMethod(m.id)}
+                                        className={`flex flex-col items-center gap-1 p-3 rounded-xl border-2 text-xs font-medium transition-all ${paymentMethod === m.id
+                                            ? 'border-primary bg-primary/5 text-primary shadow-sm'
+                                            : 'border-gray-100 text-gray-400 hover:border-gray-300'}`}
+                                    >
+                                        <m.icon size={18} />
+                                        {m.label}
+                                    </button>
+                                ))}
+                            </div>
+                        </div>
+
+                        {/* Action Buttons */}
+                        <div className="mt-6 space-y-3">
+                            <button
+                                onClick={() => {
+                                    if (!selectedPatient || invoiceItems.length === 0) {
+                                        toast('Selecciona un paciente y agrega ítems.');
+                                        return;
+                                    }
+                                    setShowPreview(true);
+                                }}
+                                className="w-full bg-gray-800 hover:bg-gray-900 text-white py-3 rounded-xl font-bold flex items-center justify-center gap-2 transition-all shadow-md hover:shadow-lg"
+                            >
+                                <Eye size={18} /> Vista Previa
+                            </button>
+
+                            <button
+                                onClick={handleFinalize}
+                                disabled={!selectedPatient || invoiceItems.length === 0}
+                                className="w-full bg-primary hover:bg-green-600 disabled:bg-gray-200 disabled:text-gray-400 text-white py-3 rounded-xl font-bold flex items-center justify-center gap-2 transition-all shadow-md hover:shadow-lg disabled:shadow-none disabled:cursor-not-allowed"
+                            >
+                                <Download size={18} /> Guardar & Descargar PDF
+                            </button>
+                        </div>
+                    </div>
+
+                    {/* Recent Invoices */}
+                    {savedInvoices.length > 0 && (
+                        <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
+                            <h3 className="text-sm font-serif font-bold text-gray-800 mb-3">Facturas Recientes</h3>
+                            <div className="space-y-2">
+                                {savedInvoices.slice(0, 5).map(inv => (
+                                    <div key={inv.id} className="flex items-center justify-between p-2 rounded-lg hover:bg-gray-50 transition-colors">
+                                        <div>
+                                            <p className="text-sm font-semibold text-gray-700">{inv.patient.firstName} {inv.patient.lastName}</p>
+                                            <p className="text-xs text-gray-400">{new Date(inv.date).toLocaleDateString('es-ES')}</p>
+                                        </div>
+                                        <span className="font-serif font-bold text-primary text-sm">${inv.total.toFixed(2)}</span>
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+                    )}
                 </div>
             </div>
 

@@ -6,7 +6,8 @@ import {
 } from 'lucide-react';
 import {
     BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
-    AreaChart, Area, Legend, LineChart, Line, Cell, PieChart, Pie
+    AreaChart, Area, Legend, LineChart, Line, Cell, PieChart, Pie,
+    Treemap
 } from 'recharts';
 
 // ── Category Icons & Colors ───────────────────────────────────────────
@@ -173,172 +174,92 @@ const FinanceDashboard = () => {
 
     // ── Render ────────────────────────────────────────────────────────
     return (
-        <div className="bg-gray-50 min-h-screen pb-12">
-            <div className="p-8 max-w-7xl mx-auto">
+        <div className="space-y-8">
 
-                {/* Header */}
-                <header className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8">
-                    <div>
-                        <h1 className="text-3xl font-serif font-bold text-gray-800 flex items-center gap-3">
-                            <div className="bg-primary/10 p-2 rounded-xl">
-                                <DollarSign className="text-primary" size={26} />
-                            </div>
-                            Salud Financiera
-                        </h1>
-                        <p className="text-secondary mt-1">Analiza ingresos, egresos y la rentabilidad de tu clínica.</p>
-                    </div>
-
-                    <div className="flex items-center gap-3">
-                        {/* Date Filters */}
-                        <div className="flex items-center gap-2 bg-white border border-gray-200 rounded-xl px-4 py-2 shadow-sm">
-                            <Filter size={16} className="text-gray-400" />
-                            <input
-                                type="date"
-                                value={dateFrom}
-                                onChange={(e) => setDateFrom(e.target.value)}
-                                className="text-sm outline-none text-gray-600 bg-transparent"
-                            />
-                            <span className="text-gray-300">→</span>
-                            <input
-                                type="date"
-                                value={dateTo}
-                                onChange={(e) => setDateTo(e.target.value)}
-                                className="text-sm outline-none text-gray-600 bg-transparent"
-                            />
+            {/* Header */}
+            <header className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+                <div>
+                    <h1 className="text-3xl font-serif font-bold text-gray-800 flex items-center gap-3">
+                        <div className="bg-primary/10 p-2 rounded-xl">
+                            <DollarSign className="text-primary" size={26} />
                         </div>
-
-                        {/* Year Selector */}
-                        <select
-                            value={selectedYear}
-                            onChange={(e) => setSelectedYear(Number(e.target.value))}
-                            className="bg-white border border-gray-200 rounded-xl px-4 py-2.5 text-sm font-medium text-gray-700 shadow-sm outline-none focus:ring-2 focus:ring-primary/30"
-                        >
-                            {YEARS.map(y => <option key={y} value={y}>{y}</option>)}
-                        </select>
-
-                        <button
-                            onClick={() => setShowExpenseModal(true)}
-                            className="bg-primary hover:bg-green-600 text-white px-4 py-2.5 rounded-xl font-bold flex items-center gap-2 text-sm transition-all shadow-md hover:shadow-lg"
-                        >
-                            <Plus size={16} /> Registrar Egreso
-                        </button>
-                    </div>
-                </header>
-
-                {/* ── KPI Cards ──────────────────────────────────────── */}
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-                    {kpis.map((kpi, i) => (
-                        <div key={i} className={`bg-white p-6 rounded-2xl shadow-sm border ${kpi.border} transition-transform hover:-translate-y-1 duration-300`}>
-                            <div className="flex items-center justify-between mb-4">
-                                <div className={`${kpi.bg} p-3 rounded-xl`}>
-                                    <kpi.icon size={22} className={kpi.color} />
-                                </div>
-                                {kpi.trendUp !== null && (
-                                    <div className={`flex items-center gap-1 text-xs font-bold px-2 py-1 rounded-full ${kpi.trendUp ? 'bg-green-50 text-green-600' : 'bg-red-50 text-red-500'}`}>
-                                        {kpi.trendUp ? <ArrowUpRight size={12} /> : <ArrowDownRight size={12} />}
-                                        {kpi.trend}
-                                    </div>
-                                )}
-                                {kpi.trendUp === null && (
-                                    <span className="text-xs font-bold px-2 py-1 rounded-full bg-amber-50 text-amber-600">{kpi.trend}</span>
-                                )}
-                            </div>
-                            <p className="text-sm font-medium text-gray-500 font-sans">{kpi.label}</p>
-                            <h3 className="text-2xl font-bold text-gray-800 mt-1 font-serif">{kpi.value}</h3>
-                        </div>
-                    ))}
+                        Salud Financiera
+                    </h1>
+                    <p className="text-secondary mt-1">Analiza ingresos, egresos y la rentabilidad de tu clínica.</p>
                 </div>
 
-                {/* ── Charts Row ─────────────────────────────────────── */}
-                <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
-                    {/* Income vs Expenses Bar Chart */}
-                    <div className="lg:col-span-2 bg-white p-6 rounded-2xl shadow-sm border border-gray-100">
-                        <div className="flex items-center justify-between mb-6">
-                            <h3 className="text-lg font-serif font-bold text-gray-800">Ingresos vs. Egresos Mensuales</h3>
-                            <span className="text-xs font-semibold text-gray-400 bg-gray-50 px-3 py-1 rounded-full">{selectedYear}</span>
-                        </div>
-                        <div className="h-72">
-                            <ResponsiveContainer width="100%" height="100%">
-                                <BarChart data={chartDataWithBalance} barGap={4}>
-                                    <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#E5E7EB" />
-                                    <XAxis
-                                        dataKey="month"
-                                        axisLine={false}
-                                        tickLine={false}
-                                        tick={{ fill: '#6D6E72', fontSize: 12, fontFamily: 'Montserrat' }}
-                                    />
-                                    <YAxis
-                                        axisLine={false}
-                                        tickLine={false}
-                                        tick={{ fill: '#6D6E72', fontSize: 11, fontFamily: 'Montserrat' }}
-                                        tickFormatter={(v) => `$${(v / 1000).toFixed(0)}k`}
-                                    />
-                                    <Tooltip content={<CustomTooltip />} />
-                                    <Legend
-                                        verticalAlign="top"
-                                        height={36}
-                                        iconType="circle"
-                                        wrapperStyle={{ fontSize: '12px', fontFamily: 'Montserrat' }}
-                                    />
-                                    <Bar dataKey="ingresos" name="Ingresos" fill="#8CC63E" radius={[6, 6, 0, 0]} barSize={24} />
-                                    <Bar dataKey="egresos" name="Egresos" fill="#ef4444" radius={[6, 6, 0, 0]} barSize={24} />
-                                </BarChart>
-                            </ResponsiveContainer>
-                        </div>
+                <div className="flex items-center gap-3">
+                    {/* Date Filters */}
+                    <div className="flex items-center gap-2 bg-white border border-gray-200 rounded-xl px-4 py-2 shadow-sm">
+                        <Filter size={16} className="text-gray-400" />
+                        <input
+                            type="date"
+                            value={dateFrom}
+                            onChange={(e) => setDateFrom(e.target.value)}
+                            className="text-sm outline-none text-gray-600 bg-transparent"
+                        />
+                        <span className="text-gray-300">→</span>
+                        <input
+                            type="date"
+                            value={dateTo}
+                            onChange={(e) => setDateTo(e.target.value)}
+                            className="text-sm outline-none text-gray-600 bg-transparent"
+                        />
                     </div>
 
-                    {/* Expense Category Pie */}
-                    <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100">
-                        <h3 className="text-lg font-serif font-bold text-gray-800 mb-6">Distribución de Egresos</h3>
-                        <div className="h-52">
-                            <ResponsiveContainer width="100%" height="100%">
-                                <PieChart>
-                                    <Pie
-                                        data={categoryBreakdown}
-                                        cx="50%"
-                                        cy="50%"
-                                        innerRadius={50}
-                                        outerRadius={75}
-                                        paddingAngle={4}
-                                        dataKey="value"
-                                    >
-                                        {categoryBreakdown.map((entry, index) => (
-                                            <Cell key={index} fill={entry.color} stroke="none" />
-                                        ))}
-                                    </Pie>
-                                    <Tooltip
-                                        formatter={(v) => `$${v.toLocaleString()}`}
-                                        contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)', fontSize: '12px' }}
-                                    />
-                                </PieChart>
-                            </ResponsiveContainer>
-                        </div>
-                        <div className="space-y-2 mt-2">
-                            {categoryBreakdown.map((cat, i) => (
-                                <div key={i} className="flex items-center justify-between text-xs">
-                                    <div className="flex items-center gap-2">
-                                        <div className="w-3 h-3 rounded-full" style={{ backgroundColor: cat.color }}></div>
-                                        <span className="text-gray-600 font-medium">{cat.name}</span>
-                                    </div>
-                                    <span className="font-serif font-bold text-gray-700">${cat.value.toLocaleString()}</span>
-                                </div>
-                            ))}
-                        </div>
-                    </div>
+                    {/* Year Selector */}
+                    <select
+                        value={selectedYear}
+                        onChange={(e) => setSelectedYear(Number(e.target.value))}
+                        className="bg-white border border-gray-200 rounded-xl px-4 py-2.5 text-sm font-medium text-gray-700 shadow-sm outline-none focus:ring-2 focus:ring-primary/30"
+                    >
+                        {YEARS.map(y => <option key={y} value={y}>{y}</option>)}
+                    </select>
+
+                    <button
+                        onClick={() => setShowExpenseModal(true)}
+                        className="bg-primary hover:bg-green-600 text-white px-4 py-2.5 rounded-xl font-bold flex items-center gap-2 text-sm transition-all shadow-md hover:shadow-lg"
+                    >
+                        <Plus size={16} /> Registrar Egreso
+                    </button>
                 </div>
+            </header>
 
-                {/* ── Balance Trend Line ──────────────────────────────── */}
-                <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 mb-8">
-                    <h3 className="text-lg font-serif font-bold text-gray-800 mb-6">Tendencia de Balance Neto</h3>
-                    <div className="h-64">
+            {/* ── KPI Cards ──────────────────────────────────────── */}
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                {kpis.map((kpi, i) => (
+                    <div key={i} className={`bg-white p-6 rounded-2xl shadow-sm border ${kpi.border} transition-transform hover:-translate-y-1 duration-300`}>
+                        <div className="flex items-center justify-between mb-4">
+                            <div className={`${kpi.bg} p-3 rounded-xl`}>
+                                <kpi.icon size={22} className={kpi.color} />
+                            </div>
+                            {kpi.trendUp !== null && (
+                                <div className={`flex items-center gap-1 text-xs font-bold px-2 py-1 rounded-full ${kpi.trendUp ? 'bg-green-50 text-green-600' : 'bg-red-50 text-red-500'}`}>
+                                    {kpi.trendUp ? <ArrowUpRight size={12} /> : <ArrowDownRight size={12} />}
+                                    {kpi.trend}
+                                </div>
+                            )}
+                            {kpi.trendUp === null && (
+                                <span className="text-xs font-bold px-2 py-1 rounded-full bg-amber-50 text-amber-600">{kpi.trend}</span>
+                            )}
+                        </div>
+                        <p className="text-sm font-medium text-gray-500 font-sans">{kpi.label}</p>
+                        <h3 className="text-2xl font-bold text-gray-800 mt-1 font-serif">{kpi.value}</h3>
+                    </div>
+                ))}
+            </div>
+
+            {/* ── Charts Row ─────────────────────────────────────── */}
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                {/* Income vs Expenses Bar Chart */}
+                <div className="lg:col-span-2 bg-white p-6 rounded-2xl shadow-sm border border-gray-100">
+                    <div className="flex items-center justify-between mb-6">
+                        <h3 className="text-lg font-serif font-bold text-gray-800">Ingresos vs. Egresos Mensuales</h3>
+                        <span className="text-xs font-semibold text-gray-400 bg-gray-50 px-3 py-1 rounded-full">{selectedYear}</span>
+                    </div>
+                    <div className="h-72">
                         <ResponsiveContainer width="100%" height="100%">
-                            <AreaChart data={chartDataWithBalance}>
-                                <defs>
-                                    <linearGradient id="colorBalance" x1="0" y1="0" x2="0" y2="1">
-                                        <stop offset="5%" stopColor="#8CC63E" stopOpacity={0.3} />
-                                        <stop offset="95%" stopColor="#8CC63E" stopOpacity={0} />
-                                    </linearGradient>
-                                </defs>
+                            <BarChart data={chartDataWithBalance} barGap={4}>
                                 <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#E5E7EB" />
                                 <XAxis
                                     dataKey="month"
@@ -350,85 +271,165 @@ const FinanceDashboard = () => {
                                     axisLine={false}
                                     tickLine={false}
                                     tick={{ fill: '#6D6E72', fontSize: 11, fontFamily: 'Montserrat' }}
-                                    tickFormatter={(v) => `$${(v / 1000).toFixed(1)}k`}
+                                    tickFormatter={(v) => `$${(v / 1000).toFixed(0)}k`}
                                 />
                                 <Tooltip content={<CustomTooltip />} />
-                                <Area
-                                    type="monotone"
-                                    dataKey="balance"
-                                    name="Balance Neto"
-                                    stroke="#8CC63E"
-                                    strokeWidth={2.5}
-                                    fillOpacity={1}
-                                    fill="url(#colorBalance)"
+                                <Legend
+                                    verticalAlign="top"
+                                    height={36}
+                                    iconType="circle"
+                                    wrapperStyle={{ fontSize: '12px', fontFamily: 'Montserrat' }}
                                 />
-                            </AreaChart>
+                                <Bar dataKey="ingresos" name="Ingresos" fill="#8CC63E" radius={[6, 6, 0, 0]} barSize={24} />
+                                <Bar dataKey="egresos" name="Egresos" fill="#ef4444" radius={[6, 6, 0, 0]} barSize={24} />
+                            </BarChart>
                         </ResponsiveContainer>
                     </div>
                 </div>
 
-                {/* ── Expenses Table ──────────────────────────────────── */}
-                <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
-                    <div className="flex items-center justify-between p-6 border-b border-gray-100">
-                        <h3 className="text-lg font-serif font-bold text-gray-800">Registro de Egresos</h3>
-                        <button
-                            onClick={() => setShowExpenseModal(true)}
-                            className="bg-primary/10 hover:bg-primary text-primary hover:text-white px-4 py-2 rounded-lg text-sm font-bold transition-all flex items-center gap-2"
-                        >
-                            <Plus size={16} /> Nuevo Egreso
-                        </button>
+
+                {/* Expense Category Treemap */}
+                <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100">
+                    <h3 className="text-lg font-serif font-bold text-gray-800 mb-6">Distribución de Egresos</h3>
+                    <div className="h-64"> {/* Aumenté un poco la altura para que el Treemap luzca mejor */}
+                        <ResponsiveContainer width="100%" height="100%">
+                            <Treemap
+                                data={categoryBreakdown}
+                                dataKey="value"
+                                aspectRatio={4 / 3}
+                                stroke="#fff"
+                                fill="#8884d8"
+                            >
+                                <Tooltip
+                                    formatter={(v) => `$${v.toLocaleString()}`}
+                                    contentStyle={{
+                                        borderRadius: '12px',
+                                        border: 'none',
+                                        boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)',
+                                        fontSize: '12px'
+                                    }}
+                                />
+                            </Treemap>
+                        </ResponsiveContainer>
                     </div>
-                    <div className="overflow-x-auto">
-                        <table className="w-full text-sm">
-                            <thead className="bg-gray-50 text-gray-500 text-xs font-medium">
+
+                    {/* Leyenda personalizada inferior */}
+                    <div className="space-y-2 mt-4">
+                        {categoryBreakdown.map((cat, i) => (
+                            <div key={i} className="flex items-center justify-between text-xs">
+                                <div className="flex items-center gap-2">
+                                    <div className="w-3 h-3 rounded-sm" style={{ backgroundColor: cat.color }}></div>
+                                    <span className="text-gray-600 font-medium">{cat.name}</span>
+                                </div>
+                                <span className="font-serif font-bold text-gray-700">${cat.value.toLocaleString()}</span>
+                            </div>
+                        ))}
+                    </div>
+                </div>
+
+            </div>
+
+            {/* ── Balance Trend Line ──────────────────────────────── */}
+            <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100">
+                <h3 className="text-lg font-serif font-bold text-gray-800 mb-6">Tendencia de Balance Neto</h3>
+                <div className="h-64">
+                    <ResponsiveContainer width="100%" height="100%">
+                        <AreaChart data={chartDataWithBalance}>
+                            <defs>
+                                <linearGradient id="colorBalance" x1="0" y1="0" x2="0" y2="1">
+                                    <stop offset="5%" stopColor="#8CC63E" stopOpacity={0.3} />
+                                    <stop offset="95%" stopColor="#8CC63E" stopOpacity={0} />
+                                </linearGradient>
+                            </defs>
+                            <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#E5E7EB" />
+                            <XAxis
+                                dataKey="month"
+                                axisLine={false}
+                                tickLine={false}
+                                tick={{ fill: '#6D6E72', fontSize: 12, fontFamily: 'Montserrat' }}
+                            />
+                            <YAxis
+                                axisLine={false}
+                                tickLine={false}
+                                tick={{ fill: '#6D6E72', fontSize: 11, fontFamily: 'Montserrat' }}
+                                tickFormatter={(v) => `$${(v / 1000).toFixed(1)}k`}
+                            />
+                            <Tooltip content={<CustomTooltip />} />
+                            <Area
+                                type="monotone"
+                                dataKey="balance"
+                                name="Balance Neto"
+                                stroke="#8CC63E"
+                                strokeWidth={2.5}
+                                fillOpacity={1}
+                                fill="url(#colorBalance)"
+                            />
+                        </AreaChart>
+                    </ResponsiveContainer>
+                </div>
+            </div>
+
+            {/* ── Expenses Table ──────────────────────────────────── */}
+            <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
+                <div className="flex items-center justify-between p-6 border-b border-gray-100">
+                    <h3 className="text-lg font-serif font-bold text-gray-800">Registro de Egresos</h3>
+                    <button
+                        onClick={() => setShowExpenseModal(true)}
+                        className="bg-primary/10 hover:bg-primary text-primary hover:text-white px-4 py-2 rounded-lg text-sm font-bold transition-all flex items-center gap-2"
+                    >
+                        <Plus size={16} /> Nuevo Egreso
+                    </button>
+                </div>
+                <div className="overflow-x-auto">
+                    <table className="w-full text-sm">
+                        <thead className="bg-gray-50 text-gray-500 text-xs font-medium">
+                            <tr>
+                                <th className="px-6 py-3 text-left">Fecha</th>
+                                <th className="px-6 py-3 text-left">Descripción</th>
+                                <th className="px-6 py-3 text-left">Categoría</th>
+                                <th className="px-6 py-3 text-right">Monto</th>
+                                <th className="px-6 py-3 text-center w-16">Acción</th>
+                            </tr>
+                        </thead>
+                        <tbody className="divide-y divide-gray-50">
+                            {filteredExpenses.length === 0 ? (
                                 <tr>
-                                    <th className="px-6 py-3 text-left">Fecha</th>
-                                    <th className="px-6 py-3 text-left">Descripción</th>
-                                    <th className="px-6 py-3 text-left">Categoría</th>
-                                    <th className="px-6 py-3 text-right">Monto</th>
-                                    <th className="px-6 py-3 text-center w-16">Acción</th>
+                                    <td colSpan="5" className="px-6 py-10 text-center text-gray-400">
+                                        No hay egresos registrados en este período.
+                                    </td>
                                 </tr>
-                            </thead>
-                            <tbody className="divide-y divide-gray-50">
-                                {filteredExpenses.length === 0 ? (
-                                    <tr>
-                                        <td colSpan="5" className="px-6 py-10 text-center text-gray-400">
-                                            No hay egresos registrados en este período.
+                            ) : filteredExpenses.map(exp => {
+                                const cat = EXPENSE_CATEGORIES.find(c => c.id === exp.category);
+                                return (
+                                    <tr key={exp.id} className="hover:bg-gray-50/50 transition-colors group">
+                                        <td className="px-6 py-3 text-gray-500">{exp.date}</td>
+                                        <td className="px-6 py-3 font-medium text-gray-800">{exp.description}</td>
+                                        <td className="px-6 py-3">
+                                            <span
+                                                className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-bold"
+                                                style={{
+                                                    backgroundColor: `${cat?.color}15`,
+                                                    color: cat?.color,
+                                                }}
+                                            >
+                                                {cat && <cat.icon size={12} />}
+                                                {cat?.label || exp.category}
+                                            </span>
+                                        </td>
+                                        <td className="px-6 py-3 text-right font-serif font-bold text-red-500">-${exp.amount.toLocaleString()}</td>
+                                        <td className="px-6 py-3 text-center">
+                                            <button
+                                                onClick={() => deleteExpense(exp.id)}
+                                                className="text-gray-300 hover:text-red-500 transition-colors opacity-0 group-hover:opacity-100"
+                                            >
+                                                <X size={16} />
+                                            </button>
                                         </td>
                                     </tr>
-                                ) : filteredExpenses.map(exp => {
-                                    const cat = EXPENSE_CATEGORIES.find(c => c.id === exp.category);
-                                    return (
-                                        <tr key={exp.id} className="hover:bg-gray-50/50 transition-colors group">
-                                            <td className="px-6 py-3 text-gray-500">{exp.date}</td>
-                                            <td className="px-6 py-3 font-medium text-gray-800">{exp.description}</td>
-                                            <td className="px-6 py-3">
-                                                <span
-                                                    className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-bold"
-                                                    style={{
-                                                        backgroundColor: `${cat?.color}15`,
-                                                        color: cat?.color,
-                                                    }}
-                                                >
-                                                    {cat && <cat.icon size={12} />}
-                                                    {cat?.label || exp.category}
-                                                </span>
-                                            </td>
-                                            <td className="px-6 py-3 text-right font-serif font-bold text-red-500">-${exp.amount.toLocaleString()}</td>
-                                            <td className="px-6 py-3 text-center">
-                                                <button
-                                                    onClick={() => deleteExpense(exp.id)}
-                                                    className="text-gray-300 hover:text-red-500 transition-colors opacity-0 group-hover:opacity-100"
-                                                >
-                                                    <X size={16} />
-                                                </button>
-                                            </td>
-                                        </tr>
-                                    );
-                                })}
-                            </tbody>
-                        </table>
-                    </div>
+                                );
+                            })}
+                        </tbody>
+                    </table>
                 </div>
             </div>
 

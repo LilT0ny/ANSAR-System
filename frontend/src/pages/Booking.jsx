@@ -14,8 +14,9 @@ const services = [
 ];
 
 const timeSlots = [
-    '09:00', '09:30', '10:00', '10:30', '11:00', '11:45',
-    '14:00', '14:30', '15:15', '16:00', '16:30', '17:00'
+    '08:00', '08:30', '09:00', '09:30', '10:00', '10:30',
+    '11:00', '11:30', '14:00', '14:30', '15:00', '15:30',
+    '16:00', '16:30', '17:00', '17:30'
 ];
 
 const Booking = () => {
@@ -121,28 +122,44 @@ const Booking = () => {
                             </div>
 
                             <div className="flex flex-col lg:flex-row gap-8 flex-1">
-                                <div className="p-4 border border-gray-100 rounded-xl bg-white shadow-sm flex justify-center">
-                                    <style>{`.rdp-day_selected { background-color: var(--color-primary) !important; color: white !important; } .rdp-button:hover:not([disabled]) { background-color: #f3f4f6; }`}</style>
+                                <div className="p-4 border border-gray-100 rounded-xl bg-white shadow-sm flex justify-center booking-cal">
+                                    <style>{`
+                                        .booking-cal .rdp-root {
+                                            --rdp-accent-color: #8CC63E;
+                                            --rdp-accent-background-color: #8CC63E15;
+                                            --rdp-today-color: #8CC63E;
+                                            --rdp-selected-border: 2px solid #8CC63E;
+                                            --rdp-day_button-border-radius: 10px;
+                                        }
+                                        .booking-cal .rdp-chevron { fill: #8CC63E; }
+                                        .booking-cal .rdp-selected .rdp-day_button {
+                                            background-color: #8CC63E;
+                                            color: white;
+                                            border-color: #8CC63E;
+                                        }
+                                        .booking-cal .rdp-day_button:hover {
+                                            background-color: #8CC63E12 !important;
+                                        }
+                                    `}</style>
                                     <DayPicker
                                         mode="single"
                                         selected={selectedDate}
                                         onSelect={setSelectedDate}
                                         locale={es}
                                         disabled={{ before: new Date() }}
-                                        className="rdp-custom"
                                     />
                                 </div>
 
-                                <div className="flex-1">
+                                <div className="flex-1 min-w-0">
                                     <p className="font-medium text-gray-700 mb-3">Horarios Disponibles</p>
-                                    <div className="grid grid-cols-3 gap-3 max-h-[300px] overflow-y-auto pr-2 custom-scrollbar">
+                                    <div className="grid grid-cols-2 gap-2 max-h-[300px] overflow-y-auto pr-1 custom-scrollbar">
                                         {timeSlots.map((time) => (
                                             <button
                                                 key={time}
                                                 onClick={() => setSelectedTime(time)}
                                                 disabled={!selectedDate}
                                                 className={clsx(
-                                                    "py-2 px-4 rounded-lg text-sm font-medium transition-all border",
+                                                    "py-2.5 px-3 rounded-xl text-sm font-semibold transition-all border text-center whitespace-nowrap",
                                                     selectedTime === time
                                                         ? "bg-primary text-white border-primary shadow-md transform scale-105"
                                                         : "bg-white text-gray-600 border-gray-200 hover:border-primary/50 hover:bg-gray-50",
