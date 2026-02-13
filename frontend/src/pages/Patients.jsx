@@ -18,8 +18,11 @@ const Patients = () => {
             docId: '12345678',
             email: 'juan@example.com',
             phone: '555-0123',
+            age: 34,
+            gender: 'Masculino',
+            city: 'Bogotá',
             lastVisit: '2026-02-10',
-            paymentStatus: 'DEUDA', // 'DEUDA' | 'AL_DIA'
+            paymentStatus: 'DEUDA',
             isActive: true
         },
         {
@@ -29,6 +32,9 @@ const Patients = () => {
             docId: '87654321',
             email: 'maria@example.com',
             phone: '555-0987',
+            age: 28,
+            gender: 'Femenino',
+            city: 'Medellín',
             lastVisit: '2026-02-05',
             paymentStatus: 'AL_DIA',
             isActive: true
@@ -40,6 +46,9 @@ const Patients = () => {
             docId: '11223344',
             email: 'carlos@example.com',
             phone: '555-4433',
+            age: 45,
+            gender: 'Masculino',
+            city: 'Cali',
             lastVisit: '2025-12-15',
             paymentStatus: 'AL_DIA',
             isActive: true
@@ -112,12 +121,14 @@ const Patients = () => {
             {/* Patients Table */}
             <div className="bg-white rounded-lg shadow-sm border border-gray-100 overflow-hidden">
                 <table className="w-full text-left">
-                    <thead className="bg-gray-50 text-gray-500 font-medium text-sm">
+                    <thead className="bg-primary text-white font-medium text-sm">
                         <tr>
                             <th className="px-6 py-4">Paciente</th>
+                            <th className="px-6 py-4">Edad</th>
+                            <th className="px-6 py-4">Género</th>
+                            <th className="px-6 py-4">Contacto</th>
                             <th className="px-6 py-4">Última Visita</th>
                             <th className="px-6 py-4">Estado de Pago</th>
-                            <th className="px-6 py-4">Contacto</th>
                             <th className="px-6 py-4 text-center">Acciones</th>
                         </tr>
                     </thead>
@@ -128,6 +139,19 @@ const Patients = () => {
                                     <div>
                                         <div className="text-base font-semibold text-gray-900">{patient.firstName} {patient.lastName}</div>
                                         <div className="text-sm text-gray-500">ID: {patient.docId}</div>
+                                    </div>
+                                </td>
+                                <td className="px-6 py-4 text-sm text-gray-700 font-medium">
+                                    {patient.age} años
+                                </td>
+                                <td className="px-6 py-4 text-sm text-gray-500">
+                                    {patient.gender}
+                                </td>
+                                
+                                <td className="px-6 py-4 text-gray-600">
+                                    <div className="flex flex-col">
+                                        <span>{patient.email}</span>
+                                        <span className="text-xs text-gray-400">{patient.phone}</span>
                                     </div>
                                 </td>
                                 <td className="px-6 py-4 text-sm text-gray-500">
@@ -154,12 +178,6 @@ const Patients = () => {
                                         </span>
                                     )}
                                 </td>
-                                <td className="px-6 py-4 text-gray-600">
-                                    <div className="flex flex-col">
-                                        <span>{patient.email}</span>
-                                        <span className="text-xs text-gray-400">{patient.phone}</span>
-                                    </div>
-                                </td>
                                 <td className="px-6 py-4 flex justify-center space-x-3 items-center">
                                     <button
                                         onClick={() => navigate(`/historia/${patient.id}`)}
@@ -180,7 +198,7 @@ const Patients = () => {
                         ))}
                         {filteredPatients.length === 0 && (
                             <tr>
-                                <td colSpan="5" className="px-6 py-8 text-center text-gray-400">
+                                <td colSpan="7" className="px-6 py-8 text-center text-gray-400">
                                     No se encontraron pacientes activos.
                                 </td>
                             </tr>
@@ -236,6 +254,31 @@ const Patients = () => {
                                     className={clsx("w-full border rounded-lg px-4 py-2 focus:ring-2 focus:ring-primary focus:border-transparent outline-none transition-all", errors.email ? "border-red-500" : "border-gray-300")}
                                 />
                                 {errors.email && <span className="text-red-500 text-xs mt-1">{errors.email.message}</span>}
+                            </div>
+
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700 mb-1">Edad</label>
+                                <input
+                                    type="number"
+                                    {...register("age", { required: "La edad es requerida", min: { value: 0, message: "Edad inválida" }, max: { value: 120, message: "Edad inválida" } })}
+                                    className={clsx("w-full border rounded-lg px-4 py-2 focus:ring-2 focus:ring-primary focus:border-transparent outline-none transition-all", errors.age ? "border-red-500" : "border-gray-300")}
+                                    placeholder="Ej: 34"
+                                />
+                                {errors.age && <span className="text-red-500 text-xs mt-1">{errors.age.message}</span>}
+                            </div>
+
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700 mb-1">Género</label>
+                                <select
+                                    {...register("gender", { required: "El género es requerido" })}
+                                    className={clsx("w-full border rounded-lg px-4 py-2 focus:ring-2 focus:ring-primary focus:border-transparent outline-none transition-all bg-white", errors.gender ? "border-red-500" : "border-gray-300")}
+                                >
+                                    <option value="">Seleccionar...</option>
+                                    <option value="Masculino">Masculino</option>
+                                    <option value="Femenino">Femenino</option>
+                                    <option value="Otro">Otro</option>
+                                </select>
+                                {errors.gender && <span className="text-red-500 text-xs mt-1">{errors.gender.message}</span>}
                             </div>
 
                             <div>
