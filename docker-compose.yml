@@ -1,0 +1,229 @@
+# =============================================
+# ANSAR System – Docker Compose
+# =============================================
+# Usage:
+#   docker compose up --build        (start all)
+#   docker compose up --build -d     (start detached)
+#   docker compose down              (stop all)
+#   docker compose down -v           (stop + remove volumes/data)
+# =============================================
+
+services:
+
+  # ── DATABASES ─────────────────────────────────
+
+  db-auth:
+    image: postgres:16-alpine
+    container_name: ansar-db-auth
+    environment:
+      POSTGRES_USER: ansar_auth
+      POSTGRES_PASSWORD: ansar_auth_pass
+      POSTGRES_DB: ansar_auth_db
+    volumes:
+      - auth_data:/var/lib/postgresql/data
+      - ./backend-fastapi/auth-service/init.sql:/docker-entrypoint-initdb.d/init.sql
+    ports:
+      - "5433:5432"
+    healthcheck:
+      test: [ "CMD-SHELL", "pg_isready -U ansar_auth -d ansar_auth_db" ]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+    networks:
+      - ansar-net
+
+  db-patients:
+    image: postgres:16-alpine
+    container_name: ansar-db-patients
+    environment:
+      POSTGRES_USER: ansar_patients
+      POSTGRES_PASSWORD: ansar_patients_pass
+      POSTGRES_DB: ansar_patients_db
+    volumes:
+      - patients_data:/var/lib/postgresql/data
+      - ./backend-fastapi/patients-service/init.sql:/docker-entrypoint-initdb.d/init.sql
+    ports:
+      - "5434:5432"
+    healthcheck:
+      test: [ "CMD-SHELL", "pg_isready -U ansar_patients -d ansar_patients_db" ]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+    networks:
+      - ansar-net
+
+  db-appointments:
+    image: postgres:16-alpine
+    container_name: ansar-db-appointments
+    environment:
+      POSTGRES_USER: ansar_appts
+      POSTGRES_PASSWORD: ansar_appts_pass
+      POSTGRES_DB: ansar_appts_db
+    volumes:
+      - appointments_data:/var/lib/postgresql/data
+      - ./backend-fastapi/appointments-service/init.sql:/docker-entrypoint-initdb.d/init.sql
+    ports:
+      - "5435:5432"
+    healthcheck:
+      test: [ "CMD-SHELL", "pg_isready -U ansar_appts -d ansar_appts_db" ]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+    networks:
+      - ansar-net
+
+  db-notifications:
+    image: postgres:16-alpine
+    container_name: ansar-db-notifications
+    environment:
+      POSTGRES_USER: ansar_notifs
+      POSTGRES_PASSWORD: ansar_notifs_pass
+      POSTGRES_DB: ansar_notifs_db
+    volumes:
+      - notifications_data:/var/lib/postgresql/data
+      - ./backend-fastapi/notifications-service/init.sql:/docker-entrypoint-initdb.d/init.sql
+    ports:
+      - "5436:5432"
+    healthcheck:
+      test: [ "CMD-SHELL", "pg_isready -U ansar_notifs -d ansar_notifs_db" ]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+    networks:
+      - ansar-net
+
+  # ── MICROSERVICES ─────────────────────────────
+
+  auth-service:
+    build:
+      context: ./backend-fastapi/auth-service
+      dockerfile: Dockerfile
+    container_name: ansar-auth
+    environment:
+      DATABASE_URL: postgresql+asyncpg://ansar_auth:ansar_auth_pass@db-auth:5432/ansar_auth_db
+      JWT_SECRET: ansar_super_secret_key_2026
+      JWT_ALGORITHM: HS256
+      JWT_EXPIRE_MINUTES: "1440"
+    ports:
+      - "8001:8001"
+    depends_on:
+      db-auth:
+        condition: service_healthy
+    restart: unless-stopped
+    networks:
+      - ansar-net
+
+  patients-service:
+    build:
+      context: ./backend-fastapi/patients-service
+      dockerfile: Dockerfile
+    container_name: ansar-patients
+    environment:
+      DATABASE_URL: postgresql+asyncpg://ansar_patients:ansar_patients_pass@db-patients:5432/ansar_patients_db
+      JWT_SECRET: ansar_super_secret_key_2026
+      JWT_ALGORITHM: HS256
+      AUTH_SERVICE_URL: http://auth-service:8001
+    ports:
+      - "8002:8002"
+    depends_on:
+      db-patients:
+        condition: service_healthy
+    restart: unless-stopped
+    networks:
+      - ansar-net
+
+  appointments-service:
+    build:
+      context: ./backend-fastapi/appointments-service
+      dockerfile: Dockerfile
+    container_name: ansar-appointments
+    environment:
+      DATABASE_URL: postgresql+asyncpg://ansar_appts:ansar_appts_pass@db-appointments:5432/ansar_appts_db
+      JWT_SECRET: ansar_super_secret_key_2026
+      JWT_ALGORITHM: HS256
+      NOTIFICATIONS_SERVICE_URL: http://notifications-service:8004
+    ports:
+      - "8003:8003"
+    depends_on:
+      db-appointments:
+        condition: service_healthy
+      notifications-service:
+        condition: service_started
+    restart: unless-stopped
+    networks:
+      - ansar-net
+
+  notifications-service:
+    build:
+      context: ./backend-fastapi/notifications-service
+      dockerfile: Dockerfile
+    container_name: ansar-notifications
+    environment:
+      DATABASE_URL: postgresql+asyncpg://ansar_notifs:ansar_notifs_pass@db-notifications:5432/ansar_notifs_db
+      JWT_SECRET: ansar_super_secret_key_2026
+      JWT_ALGORITHM: HS256
+      SMTP_HOST: smtp.gmail.com
+      SMTP_PORT: "587"
+      SMTP_USER: ${SMTP_USER:-}
+      SMTP_PASSWORD: ${SMTP_PASSWORD:-}
+      SMTP_FROM_NAME: "Clínica Dental AN-SAR"
+      SMTP_FROM_EMAIL: no-reply@clinicadental.com
+      USE_CONSOLE_EMAIL: "true"
+    ports:
+      - "8004:8004"
+    depends_on:
+      db-notifications:
+        condition: service_healthy
+    restart: unless-stopped
+    networks:
+      - ansar-net
+
+  # ── API GATEWAY ───────────────────────────────
+
+  gateway:
+    build:
+      context: ./backend-fastapi/gateway
+      dockerfile: Dockerfile
+    container_name: ansar-gateway
+    environment:
+      AUTH_SERVICE_URL: http://auth-service:8001
+      PATIENTS_SERVICE_URL: http://patients-service:8002
+      APPOINTMENTS_SERVICE_URL: http://appointments-service:8003
+      NOTIFICATIONS_SERVICE_URL: http://notifications-service:8004
+    ports:
+      - "8000:8000"
+    depends_on:
+      - auth-service
+      - patients-service
+      - appointments-service
+      - notifications-service
+    restart: unless-stopped
+    networks:
+      - ansar-net
+
+  # ── FRONTEND ──────────────────────────────────
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: ansar-frontend
+    ports:
+      - "3000:80"
+    depends_on:
+      - gateway
+    restart: unless-stopped
+    networks:
+      - ansar-net
+
+# ── VOLUMES ─────────────────────────────────────
+volumes:
+  auth_data:
+  patients_data:
+  appointments_data:
+  notifications_data:
+
+    # ── NETWORK ─────────────────────────────────────
+networks:
+  ansar-net:
+    driver: bridge

@@ -2,7 +2,8 @@ import React, { useState, useEffect, useRef } from 'react';
 import {
     Calendar as CalendarIcon, CheckCircle, XCircle,
     ChevronLeft, ChevronRight, Clock, Plus, X, User,
-    MoreVertical, AlertCircle
+    MoreVertical, AlertCircle, Settings, Link2, Copy,
+    Trash2, ShieldCheck
 } from 'lucide-react';
 import {
     format, isSameDay, parseISO, startOfWeek,
@@ -36,6 +37,8 @@ const MOCK_PATIENTS = [
     { id: 5, name: 'Carlos Ruiz', docId: '99001122' },
 ];
 
+
+
 // ── Component ─────────────────────────────────────────────────
 const Appointments = () => {
     const [selectedDate, setSelectedDate] = useState(new Date());
@@ -44,6 +47,15 @@ const Appointments = () => {
     const [showToast, setShowToast] = useState(false);
     const [toastMsg, setToastMsg] = useState('');
     const scrollRef = useRef(null);
+
+    // ── Ortho Block Management ────────────────────────────────
+    const [showOrthoPanel, setShowOrthoPanel] = useState(false);
+    const [orthoBlocks, setOrthoBlocks] = useState([
+        { id: 1, date: '2026-02-23', startTime: '12:00', endTime: '17:00', label: 'Lun 23 Feb – Ortodoncia' },
+    ]);
+    const [newBlock, setNewBlock] = useState({ date: format(new Date(), 'yyyy-MM-dd'), startTime: '09:00', endTime: '12:00' });
+    const [showLinkModal, setShowLinkModal] = useState(false);
+    const [linkCopied, setLinkCopied] = useState(false);
 
     // New event form
     const [newEvent, setNewEvent] = useState({
@@ -153,6 +165,63 @@ const Appointments = () => {
         toast('Cita creada exitosamente.');
     };
 
+    // ── Ortho Block Handlers ──────────────────────────────────
+    const handleAddOrthoBlock = () => {
+        if (!newBlock.date) {
+            toast('Selecciona una fecha.');
+            return;
+        }
+        // Don't allow past dates
+        const blockDate = parseISO(newBlock.date);
+        if (blockDate < new Date(new Date().setHours(0, 0, 0, 0))) {
+            toast('No se puede crear un bloque en una fecha pasada.');
+            return;
+        }
+        if (newBlock.startTime >= newBlock.endTime) {
+            toast('La hora de inicio debe ser antes de la hora de fin.');
+            return;
+        }
+        // Check for duplicate or overlapping blocks on the same date
+        const isDuplicate = orthoBlocks.some(b => {
+            if (b.date !== newBlock.date) return false;
+            return newBlock.startTime < b.endTime && newBlock.endTime > b.startTime;
+        });
+        if (isDuplicate) {
+            toast('Ya existe un bloque en esa fecha y horario. No se puede repetir.');
+            return;
+        }
+        const dateLabel = format(blockDate, "EEE d MMM", { locale: es });
+        const block = {
+            ...newBlock,
+            id: Date.now(),
+            label: `${dateLabel} – Ortodoncia`,
+        };
+        setOrthoBlocks([...orthoBlocks, block]);
+        toast('Bloque de ortodoncia creado.');
+    };
+
+    const handleRemoveOrthoBlock = (id) => {
+        setOrthoBlocks(orthoBlocks.filter(b => b.id !== id));
+        toast('Bloque eliminado.');
+    };
+
+    const orthoBookingLink = `${window.location.origin}/reservar/ortodoncia?token=${btoa('ortho-' + Date.now()).slice(0, 12)}`;
+
+    const handleCopyLink = () => {
+        navigator.clipboard.writeText(orthoBookingLink);
+        setLinkCopied(true);
+        setTimeout(() => setLinkCopied(false), 2500);
+    };
+
+    // Check if an appointment is in an ortho block
+    const isOrthoAppointment = (appt) => appt.type === 'Ortodoncia';
+
+    // Check if a weekday column has ortho blocks for background highlight
+    const getOrthoBlocksForDay = (day) => {
+        const dateStr = format(day, 'yyyy-MM-dd');
+        return orthoBlocks.filter(b => b.date === dateStr);
+    };
+
     // Filtered patients for the dropdown
     const filteredPatients = MOCK_PATIENTS.filter(p =>
         `${p.name} ${p.docId}`.toLowerCase().includes(patientSearch.toLowerCase())
@@ -176,25 +245,124 @@ const Appointments = () => {
                     <h1 className="text-3xl font-serif font-bold text-gray-800">Agenda de Citas</h1>
                     <p className="text-secondary mt-1">Administra las citas y horarios de la clínica.</p>
                 </div>
-                <button
-                    type="button"
-                    onClick={() => {
-                        setNewEvent(prev => ({ ...prev, date: format(selectedDate, 'yyyy-MM-dd') }));
-                        setShowCreateModal(true);
-                    }}
-                    className="bg-primary hover:bg-green-600 text-white px-5 py-2.5 rounded-xl font-bold flex items-center gap-2 text-sm transition-all shadow-md hover:shadow-lg"
-                >
-                    <Plus size={18} />
-                    Nueva Cita
-                </button>
+                <div className="flex items-center gap-2">
+                    <button
+                        type="button"
+                        onClick={() => setShowOrthoPanel(!showOrthoPanel)}
+                        className="px-4 py-2.5 rounded-xl font-bold flex items-center gap-2 text-sm transition-all border-2"
+                        style={showOrthoPanel
+                            ? { backgroundColor: '#8CC63E', color: '#fff', borderColor: '#8CC63E', boxShadow: '0 4px 14px rgba(140,198,62,0.35)' }
+                            : { color: '#6aad2d', borderColor: 'rgba(140,198,62,0.4)', backgroundColor: 'transparent' }
+                        }
+                        onMouseEnter={e => { if (!showOrthoPanel) e.currentTarget.style.backgroundColor = 'rgba(140,198,62,0.06)'; }}
+                        onMouseLeave={e => { if (!showOrthoPanel) e.currentTarget.style.backgroundColor = 'transparent'; }}
+                    >
+                        <ShieldCheck size={16} />
+                        Ortodoncia
+                    </button>
+
+                    <button
+                        type="button"
+                        onClick={() => {
+                            setNewEvent(prev => ({ ...prev, date: format(selectedDate, 'yyyy-MM-dd') }));
+                            setShowCreateModal(true);
+                        }}
+                        className="bg-primary hover:bg-green-600 text-white px-5 py-2.5 rounded-xl font-bold flex items-center gap-2 text-sm transition-all shadow-md hover:shadow-lg"
+                    >
+                        <Plus size={18} />
+                        Nueva Cita
+                    </button>
+                </div>
             </header>
+
+            {/* ── Ortho Config Panel (CA 1, 2, 3) ─────────────────── */}
+            {showOrthoPanel && (
+                <div className="rounded-2xl p-6 animate-in fade-in slide-in-from-top-2 duration-300" style={{ backgroundColor: 'rgba(140,198,62,0.04)', border: '2px solid rgba(140,198,62,0.2)' }}>
+                    <div className="flex items-center justify-between mb-5">
+                        <div className="flex items-center gap-3">
+                            <div className="p-2 rounded-xl" style={{ backgroundColor: 'rgba(140,198,62,0.12)' }}>
+                                <ShieldCheck style={{ color: '#8CC63E' }} size={20} />
+                            </div>
+                            <div>
+                                <h3 className="text-lg font-serif font-bold text-gray-800">Bloques de Ortodoncia</h3>
+                                <p className="text-xs text-gray-400">Define fechas y horarios exclusivos para ortodoncia</p>
+                            </div>
+                        </div>
+                        <button type="button" onClick={() => setShowOrthoPanel(false)} className="text-gray-400 hover:text-gray-600 p-1 hover:bg-gray-100 rounded-lg transition-colors">
+                            <X size={18} />
+                        </button>
+                    </div>
+
+                    {/* Add new block */}
+                    <div className="flex flex-wrap items-end gap-3 mb-5 bg-white rounded-xl p-4 border border-gray-100">
+                        <div>
+                            <label className="block text-xs font-bold text-gray-500 mb-1">Fecha</label>
+                            <input
+                                type="date"
+                                value={newBlock.date}
+                                onChange={e => setNewBlock({ ...newBlock, date: e.target.value })}
+                                min={format(new Date(), 'yyyy-MM-dd')}
+                                className="border border-gray-200 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none bg-white"
+                            />
+                        </div>
+                        <div>
+                            <label className="block text-xs font-bold text-gray-500 mb-1">Hora Inicio</label>
+                            <select value={newBlock.startTime} onChange={e => setNewBlock({ ...newBlock, startTime: e.target.value })}
+                                className="border border-gray-200 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none bg-white">
+                                {timeOptions.map(t => <option key={t} value={t}>{t}</option>)}
+                            </select>
+                        </div>
+                        <div>
+                            <label className="block text-xs font-bold text-gray-500 mb-1">Hora Fin</label>
+                            <select value={newBlock.endTime} onChange={e => setNewBlock({ ...newBlock, endTime: e.target.value })}
+                                className="border border-gray-200 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none bg-white">
+                                {timeOptions.map(t => <option key={t} value={t}>{t}</option>)}
+                            </select>
+                        </div>
+                        <button type="button" onClick={handleAddOrthoBlock}
+                            className="text-white px-5 py-2 rounded-lg font-bold text-sm flex items-center gap-2 transition-all shadow-md hover:opacity-90"
+                            style={{ backgroundColor: '#8CC63E' }}>
+                            <Plus size={16} /> Agregar Bloque
+                        </button>
+                    </div>
+
+                    {/* Active blocks list */}
+                    {orthoBlocks.length === 0 ? (
+                        <p className="text-sm text-gray-400 text-center py-4">No hay bloques de ortodoncia configurados.</p>
+                    ) : (
+                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+                            {orthoBlocks.map(block => (
+                                <div key={block.id} className="bg-white rounded-xl p-4 flex items-center justify-between group transition-all" style={{ border: '2px solid rgba(140,198,62,0.2)' }}
+                                    onMouseEnter={e => e.currentTarget.style.borderColor = 'rgba(140,198,62,0.5)'}
+                                    onMouseLeave={e => e.currentTarget.style.borderColor = 'rgba(140,198,62,0.2)'}>
+                                    <div className="flex items-center gap-3">
+                                        <div className="p-2 rounded-lg" style={{ backgroundColor: 'rgba(140,198,62,0.12)' }}>
+                                            <CalendarIcon style={{ color: '#8CC63E' }} size={16} />
+                                        </div>
+                                        <div>
+                                            <p className="font-bold text-sm text-gray-800 capitalize">
+                                                {format(parseISO(block.date), "EEEE d 'de' MMMM, yyyy", { locale: es })}
+                                            </p>
+                                            <p className="text-xs text-gray-400">{block.startTime} – {block.endTime}</p>
+                                        </div>
+                                    </div>
+                                    <button type="button" onClick={() => handleRemoveOrthoBlock(block.id)}
+                                        className="text-gray-300 hover:text-red-500 p-1 rounded-lg hover:bg-red-50 transition-colors opacity-0 group-hover:opacity-100">
+                                        <Trash2 size={16} />
+                                    </button>
+                                </div>
+                            ))}
+                        </div>
+                    )}
+                </div>
+            )}
 
             {/* ── Calendar Layout ─────────────────────────────────── */}
             <div className="flex gap-6">
 
                 {/* ── LEFT: Mini Calendar ─────────────────────────── */}
                 <aside className="hidden lg:block w-[240px] shrink-0 space-y-4">
-                    <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-3 mini-cal">
+                    <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-3 mini-cal uppercase">
                         <style>{`
                             /* ── react-day-picker v9 overrides ── */
                             .mini-cal .rdp-root {
@@ -230,17 +398,22 @@ const Appointments = () => {
                             }
                             .mini-cal .rdp-selected .rdp-day_button {
                                 background-color: #8CC63E;
-                                color: white;
+                                color: white !important;
                                 border-color: #8CC63E;
                                 border-radius: 10px;
+                            }
+                            .mini-cal .rdp-selected .rdp-day_button:hover {
+                                background-color: #7ab832 !important;
+                                color: white !important;
                             }
                             .mini-cal .rdp-today:not(.rdp-selected) .rdp-day_button {
                                 color: #8CC63E;
                                 font-weight: 800;
                             }
                             .mini-cal .rdp-day_button:hover {
-                                background-color: #8CC63E12 !important;
+                                background-color: rgba(140, 198, 62, 0.08) !important;
                                 border-radius: 10px;
+                                color: inherit;
                             }
                             .mini-cal .rdp-focusable { cursor: pointer; }
                         `}</style>
@@ -255,7 +428,7 @@ const Appointments = () => {
 
                     {/* Quick Stats */}
                     <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-4">
-                        <h3 className="text-sm font-serif font-bold text-gray-700 mb-3">Resumen del Día</h3>
+                        <h3 className="text-sm font-serif font-bold text-gray-700 mb-3 uppercase">Resumen del Día</h3>
                         {(() => {
                             const todayAppts = appointments.filter(a => isSameDay(parseISO(a.date), selectedDate));
                             const confirmed = todayAppts.filter(a => a.status === 'confirmada').length;
@@ -294,7 +467,7 @@ const Appointments = () => {
                             <button
                                 type="button"
                                 onClick={() => setSelectedDate(new Date())}
-                                className="px-4 py-1.5 text-sm font-bold text-primary border-2 border-primary/30 rounded-xl hover:bg-primary/5 transition-all"
+                                className="bg-primary hover:bg-green-600 text-white px-5 py-2.5 rounded-xl font-bold flex items-center gap-2 text-sm transition-all shadow-md hover:shadow-lg"
                             >
                                 Hoy
                             </button>
@@ -378,16 +551,29 @@ const Appointments = () => {
                                         </div>
                                     ))}
                                 </div>
-                                {weekDays.map((_, i) => (
-                                    <div key={i} className="flex-1 border-r border-gray-100 relative">
-                                        {TIME_SLOTS.map(hour => (
-                                            <div key={hour} className="h-16 border-b border-gray-50 relative">
-                                                {/* Half-hour dashed line */}
-                                                <div className="absolute top-1/2 left-0 right-0 border-t border-dashed border-gray-100/80"></div>
-                                            </div>
-                                        ))}
-                                    </div>
-                                ))}
+                                {weekDays.map((day, i) => {
+                                    const dayOrthoBlocks = getOrthoBlocksForDay(day);
+                                    return (
+                                        <div key={i} className="flex-1 border-r border-gray-100 relative">
+                                            {/* Ortho block background bands (CA 3) */}
+                                            {dayOrthoBlocks.map(block => {
+                                                const [sh, sm] = block.startTime.split(':').map(Number);
+                                                const [eh, em] = block.endTime.split(':').map(Number);
+                                                const topPx = ((sh - START_HOUR) * 60 + sm) / 60 * HOUR_HEIGHT;
+                                                const heightPx = ((eh * 60 + em) - (sh * 60 + sm)) / 60 * HOUR_HEIGHT;
+                                                return (
+                                                    <div key={block.id} className="absolute left-0 right-0 z-0 pointer-events-none"
+                                                        style={{ top: `${topPx}px`, height: `${heightPx}px`, backgroundColor: 'rgba(140,198,62,0.06)', borderLeft: '2px solid rgba(140,198,62,0.25)' }} />
+                                                );
+                                            })}
+                                            {TIME_SLOTS.map(hour => (
+                                                <div key={hour} className="h-16 border-b border-gray-50 relative">
+                                                    <div className="absolute top-1/2 left-0 right-0 border-t border-dashed border-gray-100/80"></div>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    );
+                                })}
                             </div>
 
                             {/* Events Overlay */}
@@ -412,9 +598,18 @@ const Appointments = () => {
                                                     key={appt.id}
                                                     className={clsx(
                                                         "absolute left-1 right-1.5 rounded-xl p-2 text-xs cursor-pointer transition-all hover:shadow-lg hover:z-20 group overflow-hidden",
-                                                        getStatusStyles(appt.status)
+                                                        isOrthoAppointment(appt)
+                                                            ? "border-l-4"
+                                                            : getStatusStyles(appt.status)
                                                     )}
-                                                    style={getPositionStyle(appt.start, appt.end)}
+                                                    style={{
+                                                        ...getPositionStyle(appt.start, appt.end),
+                                                        ...(isOrthoAppointment(appt) ? {
+                                                            backgroundColor: 'rgba(140,198,62,0.1)',
+                                                            borderLeftColor: '#8CC63E',
+                                                            color: '#4a7a1a',
+                                                        } : {}),
+                                                    }}
                                                 >
                                                     <div className="font-bold truncate leading-tight">{appt.type}</div>
                                                     <div className="truncate text-[10px] opacity-80 mt-0.5">
@@ -652,6 +847,54 @@ const Appointments = () => {
                                 <Plus size={16} />
                                 Crear Cita
                             </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* ─── SEND LINK MODAL (CA 4) ───────────────────────────── */}
+            {showLinkModal && (
+                <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+                    <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md animate-in fade-in zoom-in-95 duration-200">
+                        <div className="flex items-center justify-between p-6 border-b border-gray-100">
+                            <div className="flex items-center gap-3">
+                                <div className="p-2 rounded-xl" style={{ backgroundColor: 'rgba(140,198,62,0.12)' }}>
+                                    <Link2 style={{ color: '#8CC63E' }} size={20} />
+                                </div>
+                                <h2 className="text-xl font-serif font-bold text-gray-800">Enlace de Reserva</h2>
+                            </div>
+                            <button type="button" onClick={() => { setShowLinkModal(false); setLinkCopied(false); }}
+                                className="text-gray-400 hover:text-gray-600 p-1 hover:bg-gray-100 rounded-lg transition-colors">
+                                <X size={22} />
+                            </button>
+                        </div>
+                        <div className="p-6 space-y-4">
+                            <p className="text-sm text-gray-500">
+                                Comparte este enlace con tus pacientes para que reserven citas de ortodoncia en los horarios que configuraste.
+                            </p>
+                            <div className="flex items-center gap-2">
+                                <input type="text" readOnly value={orthoBookingLink}
+                                    className="flex-1 border border-gray-200 rounded-xl px-4 py-2.5 text-sm bg-gray-50 text-gray-600 outline-none" />
+                                <button type="button" onClick={handleCopyLink}
+                                    className="px-4 py-2.5 rounded-xl font-bold text-sm flex items-center gap-2 transition-all shadow-md"
+                                    style={linkCopied
+                                        ? { backgroundColor: '#dcfce7', color: '#15803d', border: '1px solid #bbf7d0' }
+                                        : { backgroundColor: '#8CC63E', color: '#fff' }
+                                    }>
+                                    {linkCopied ? <><CheckCircle size={16} /> Copiado</> : <><Copy size={16} /> Copiar</>}
+                                </button>
+                            </div>
+                            <div className="rounded-xl p-4" style={{ backgroundColor: 'rgba(140,198,62,0.06)', border: '1px solid rgba(140,198,62,0.15)' }}>
+                                <p className="text-xs font-bold mb-1" style={{ color: '#6aad2d' }}>Bloques activos incluidos:</p>
+                                <div className="space-y-1">
+                                    {orthoBlocks.map(b => (
+                                        <p key={b.id} className="text-xs text-gray-600 capitalize">
+                                            • {format(parseISO(b.date), "EEEE d MMM yyyy", { locale: es })}: {b.startTime} – {b.endTime}
+                                        </p>
+                                    ))}
+                                    {orthoBlocks.length === 0 && <p className="text-xs text-gray-400">No hay bloques configurados.</p>}
+                                </div>
+                            </div>
                         </div>
                     </div>
                 </div>

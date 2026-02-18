@@ -10,6 +10,7 @@ export default {
                 primary: '#8CC63E',
                 secondary: '#6D6E72',
                 background: '#FFFFFF',
+                ortho: '#182D4D',
             },
             fontFamily: {
                 sans: ['Montserrat', 'sans-serif'],

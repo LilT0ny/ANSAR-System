@@ -9,6 +9,7 @@ import Settings from './pages/Settings';
 import LandingPage from './pages/LandingPage';
 import Login from './pages/Login';
 import Booking from './pages/Booking';
+import OrthodonticsBooking from './pages/OrthodonticsBooking';
 import Billing from './pages/Billing';
 import FinanceDashboard from './pages/FinanceDashboard';
 import AdminLayout from './layouts/AdminLayout';
@@ -22,6 +23,7 @@ function App() {
                     <Route path="/" element={<LandingPage />} />
                     <Route path="/login" element={<Login />} />
                     <Route path="/reserva" element={<Booking />} />
+                    <Route path="/reservar/ortodoncia" element={<OrthodonticsBooking />} />
 
                     {/* Admin Routes (Wrapped in Layout) */}
                     <Route element={<AdminLayout />}>
