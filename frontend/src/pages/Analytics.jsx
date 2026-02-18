@@ -35,10 +35,14 @@ const Analytics = () => {
                 ))}
             </div>
 
-            {/* Charts */}
-            <div>
+            {/* Charts — grouped container */}
+            <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100">
+                <h3 className="text-lg font-serif font-bold text-gray-800 mb-6">Gráficos de Rendimiento</h3>
                 <AnalyticsCharts />
             </div>
+
+            {/* Visual divider */}
+            <div className="border-t border-gray-200"></div>
 
             {/* Satisfaction Survey Feedback (Mock) */}
             <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100">

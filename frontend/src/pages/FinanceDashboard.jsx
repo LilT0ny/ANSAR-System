@@ -179,12 +179,7 @@ const FinanceDashboard = () => {
             {/* Header */}
             <header className="flex flex-col md:flex-row md:items-center justify-between gap-4">
                 <div>
-                    <h1 className="text-3xl font-serif font-bold text-gray-800 flex items-center gap-3">
-                        <div className="bg-primary/10 p-2 rounded-xl">
-                            <DollarSign className="text-primary" size={26} />
-                        </div>
-                        Salud Financiera
-                    </h1>
+                    <h1 className="text-3xl font-serif font-bold text-gray-800">Salud Financiera</h1>
                     <p className="text-secondary mt-1">Analiza ingresos, egresos y la rentabilidad de tu clínica.</p>
                 </div>
 

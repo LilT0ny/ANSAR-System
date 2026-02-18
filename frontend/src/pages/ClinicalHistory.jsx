@@ -67,31 +67,22 @@ const ClinicalHistory = () => {
             {/* ─── Page Header (integrated, no sticky subheader) ─── */}
             <div>
                 <div className="flex flex-col md:flex-row md:items-start justify-between gap-4">
-                    {/* Left: Back + Title + Patient info */}
-                    <div className="flex items-start gap-4">
-                        <button
-                            type="button"
-                            onClick={() => navigate('/pacientes')}
-                            className="mt-1 p-2 hover:bg-gray-200 rounded-full text-gray-400 hover:text-gray-700 transition-colors"
-                        >
-                            <ArrowLeft size={20} />
-                        </button>
-                        <div>
-                            <h1 className="text-3xl font-serif font-bold text-gray-800">Historia Clínica</h1>
-                            <div className="flex items-center gap-3 mt-2">
-                                <div className="h-10 w-10 rounded-full bg-primary/10 text-primary flex items-center justify-center font-bold text-sm font-serif">
-                                    {MOCK_PATIENT.firstName[0]}{MOCK_PATIENT.lastName[0]}
-                                </div>
-                                <div>
-                                    <p className="font-semibold text-gray-800">{MOCK_PATIENT.firstName} {MOCK_PATIENT.lastName}</p>
-                                    <p className="text-xs text-gray-400">Cédula: {MOCK_PATIENT.docId}</p>
-                                </div>
+                    {/* Left: Title + Patient info */}
+                    <div>
+                        <h1 className="text-3xl font-serif font-bold text-gray-800">Historia Clínica</h1>
+                        <div className="flex items-center gap-3 mt-2">
+                            <div className="h-10 w-10 rounded-full bg-primary/10 text-primary flex items-center justify-center font-bold text-sm font-serif">
+                                {MOCK_PATIENT.firstName[0]}{MOCK_PATIENT.lastName[0]}
+                            </div>
+                            <div>
+                                <p className="font-semibold text-gray-800">{MOCK_PATIENT.firstName} {MOCK_PATIENT.lastName}</p>
+                                <p className="text-xs text-gray-400">Cédula: {MOCK_PATIENT.docId}</p>
                             </div>
                         </div>
                     </div>
 
                     {/* Right: Edit / Save / Cancel buttons */}
-                    <div className="flex items-center gap-3 ml-14 md:ml-0">
+                    <div className="flex items-center gap-3">
                         {isEditing ? (
                             <>
                                 <button
@@ -113,7 +104,7 @@ const ClinicalHistory = () => {
                             <button
                                 type="button"
                                 onClick={() => setIsEditing(true)}
-                                className="bg-white border border-gray-300 text-gray-700 hover:bg-gray-50 px-6 py-2.5 rounded-xl font-medium shadow-sm transition-all flex items-center gap-2"
+                                className="bg-primary hover:bg-green-600 text-white px-6 py-2.5 rounded-xl font-bold shadow-md transition-all flex items-center gap-2"
                             >
                                 <Edit2 size={18} /> Editar Datos
                             </button>

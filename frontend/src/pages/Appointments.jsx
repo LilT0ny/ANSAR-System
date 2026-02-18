@@ -79,8 +79,8 @@ const Appointments = () => {
         { id: 5, patient: 'Carlos Ruiz', date: '2026-02-13', start: '16:00', end: '17:00', type: 'Consulta General', status: 'completada' },
     ]);
 
-    const START_HOUR = 7;
-    const END_HOUR = 21; // 9 PM — full day
+    const START_HOUR = 8;
+    const END_HOUR = 19; // 9 PM — full day
     const HOUR_HEIGHT = 64; // px per hour
     const TIME_SLOTS = Array.from({ length: END_HOUR - START_HOUR }, (_, i) => i + START_HOUR);
 

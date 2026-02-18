@@ -46,7 +46,7 @@ const Billing = () => {
     const [patientSearch, setPatientSearch] = useState('');
     const [showPatientDropdown, setShowPatientDropdown] = useState(false);
     const [invoiceItems, setInvoiceItems] = useState([]);
-    const [taxRate, setTaxRate] = useState(12); // IVA %
+    const [taxRate, setTaxRate] = useState(15); // IVA %
     const [globalDiscount, setGlobalDiscount] = useState(0); // in $
     const [paymentMethod, setPaymentMethod] = useState('cash');
     const [showTreatments, setShowTreatments] = useState(false);
@@ -257,10 +257,7 @@ const Billing = () => {
         <div className="space-y-8">
             {/* Header */}
             <header>
-                <h1 className="text-3xl font-serif font-bold text-gray-800 flex items-center gap-3">
-                    <FileText className="text-primary" size={28} />
-                    Facturación por Paciente
-                </h1>
+                <h1 className="text-3xl font-serif font-bold text-gray-800">Facturación por Paciente</h1>
                 <p className="text-secondary mt-1">Genera facturas detalladas, aplica descuentos, y descarga en PDF.</p>
             </header>
 
@@ -271,9 +268,7 @@ const Billing = () => {
 
                     {/* Patient Selector */}
                     <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
-                        <h2 className="text-lg font-serif font-bold text-gray-800 mb-4 flex items-center gap-2">
-                            <User className="text-primary" size={20} /> Seleccionar Paciente
-                        </h2>
+                        <h2 className="text-lg font-serif font-bold text-gray-800 mb-4">Seleccionar Paciente</h2>
                         <div className="relative">
                             <div className="flex items-center border border-gray-200 rounded-lg px-4 py-3 focus-within:ring-2 focus-within:ring-primary/30 focus-within:border-primary transition-all">
                                 <Search className="text-gray-400 mr-3" size={18} />
@@ -322,10 +317,7 @@ const Billing = () => {
                                 onClick={() => setShowTreatments(!showTreatments)}
                                 className="w-full flex items-center justify-between text-left"
                             >
-                                <h2 className="text-lg font-serif font-bold text-gray-800 flex items-center gap-2">
-                                    <ClipboardList className="text-primary" size={20} />
-                                    Tratamientos de Historia Clínica
-                                </h2>
+                                <h2 className="text-lg font-serif font-bold text-gray-800">Tratamientos de Historia Clínica</h2>
                                 <ChevronDown className={`text-gray-400 transform transition-transform ${showTreatments ? 'rotate-180' : ''}`} size={20} />
                             </button>
                             {showTreatments && (
@@ -363,10 +355,7 @@ const Billing = () => {
                     {/* Invoice Items Table */}
                     <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
                         <div className="flex items-center justify-between mb-4">
-                            <h2 className="text-lg font-serif font-bold text-gray-800 flex items-center gap-2">
-                                <Package className="text-primary" size={20} />
-                                Detalle de Factura
-                            </h2>
+                            <h2 className="text-lg font-serif font-bold text-gray-800">Detalle de Factura</h2>
                             <button
                                 onClick={addCustomItem}
                                 className="bg-primary/10 hover:bg-primary text-primary hover:text-white px-4 py-2 rounded-lg text-sm font-bold transition-all flex items-center gap-2"
@@ -452,9 +441,7 @@ const Billing = () => {
 
                     {/* Financial Summary Card */}
                     <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6 sticky top-20">
-                        <h2 className="text-lg font-serif font-bold text-gray-800 mb-5 flex items-center gap-2">
-                            <DollarSign className="text-primary" size={20} /> Resumen
-                        </h2>
+                        <h2 className="text-lg font-serif font-bold text-gray-800 mb-5">Resumen</h2>
 
                         {/* Tax Rate */}
                         <div className="mb-4">

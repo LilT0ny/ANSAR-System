@@ -10,6 +10,17 @@ const Patients = () => {
     const [searchTerm, setSearchTerm] = useState('');
 
     // Mock data for display with new fields for UH 11 & UH 12
+    // Helper: calculate age from birth date
+    const calculateAge = (birthDate) => {
+        if (!birthDate) return '—';
+        const today = new Date();
+        const birth = new Date(birthDate);
+        let age = today.getFullYear() - birth.getFullYear();
+        const m = today.getMonth() - birth.getMonth();
+        if (m < 0 || (m === 0 && today.getDate() < birth.getDate())) age--;
+        return age;
+    };
+
     const [patients, setPatients] = useState([
         {
             id: 1,
@@ -18,7 +29,7 @@ const Patients = () => {
             docId: '12345678',
             email: 'juan@example.com',
             phone: '555-0123',
-            age: 34,
+            birthDate: '1992-03-15',
             gender: 'Masculino',
             city: 'Bogotá',
             lastVisit: '2026-02-10',
@@ -32,7 +43,7 @@ const Patients = () => {
             docId: '87654321',
             email: 'maria@example.com',
             phone: '555-0987',
-            age: 28,
+            birthDate: '1998-07-22',
             gender: 'Femenino',
             city: 'Medellín',
             lastVisit: '2026-02-05',
@@ -46,7 +57,7 @@ const Patients = () => {
             docId: '11223344',
             email: 'carlos@example.com',
             phone: '555-4433',
-            age: 45,
+            birthDate: '1981-11-08',
             gender: 'Masculino',
             city: 'Cali',
             lastVisit: '2025-12-15',
@@ -70,6 +81,7 @@ const Patients = () => {
         setShowForm(false);
         reset();
     };
+
 
     const handleSoftDelete = (id) => {
         if (window.confirm('¿Está seguro de realizar la baja lógica de este paciente?')) {
@@ -142,12 +154,12 @@ const Patients = () => {
                                     </div>
                                 </td>
                                 <td className="px-6 py-4 text-sm text-gray-700 font-medium">
-                                    {patient.age} años
+                                    {calculateAge(patient.birthDate)} años
                                 </td>
                                 <td className="px-6 py-4 text-sm text-gray-500">
                                     {patient.gender}
                                 </td>
-                                
+
                                 <td className="px-6 py-4 text-gray-600">
                                     <div className="flex flex-col">
                                         <span>{patient.email}</span>
@@ -257,14 +269,13 @@ const Patients = () => {
                             </div>
 
                             <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-1">Edad</label>
+                                <label className="block text-sm font-medium text-gray-700 mb-1">Fecha de Nacimiento</label>
                                 <input
-                                    type="number"
-                                    {...register("age", { required: "La edad es requerida", min: { value: 0, message: "Edad inválida" }, max: { value: 120, message: "Edad inválida" } })}
-                                    className={clsx("w-full border rounded-lg px-4 py-2 focus:ring-2 focus:ring-primary focus:border-transparent outline-none transition-all", errors.age ? "border-red-500" : "border-gray-300")}
-                                    placeholder="Ej: 34"
+                                    type="date"
+                                    {...register("birthDate", { required: "La fecha de nacimiento es requerida" })}
+                                    className={clsx("w-full border rounded-lg px-4 py-2 focus:ring-2 focus:ring-primary focus:border-transparent outline-none transition-all", errors.birthDate ? "border-red-500" : "border-gray-300")}
                                 />
-                                {errors.age && <span className="text-red-500 text-xs mt-1">{errors.age.message}</span>}
+                                {errors.birthDate && <span className="text-red-500 text-xs mt-1">{errors.birthDate.message}</span>}
                             </div>
 
                             <div>
