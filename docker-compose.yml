@@ -1,13 +1,6 @@
 # =============================================
-# ANSAR System – Docker Compose
+# ANSAR System – Docker Compose (Centralized)
 # =============================================
-# Usage:
-#   docker compose up --build        (start all)
-#   docker compose up --build -d     (start detached)
-#   docker compose down              (stop all)
-#   docker compose down -v           (stop + remove volumes/data)
-# =============================================
-
 services:
 
   # ── DATABASES ─────────────────────────────────
@@ -16,19 +9,19 @@ services:
     image: postgres:16-alpine
     container_name: ansar-db-auth
     environment:
-      POSTGRES_USER: ansar_auth
-      POSTGRES_PASSWORD: ansar_auth_pass
-      POSTGRES_DB: ansar_auth_db
+      POSTGRES_USER: ${POSTGRES_USER_AUTH}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD_AUTH}
+      POSTGRES_DB: ${POSTGRES_DB_AUTH}
     volumes:
       - auth_data:/var/lib/postgresql/data
-      - ./backend-fastapi/auth-service/init.sql:/docker-entrypoint-initdb.d/init.sql
+      - ./backend/auth-service/init.sql:/docker-entrypoint-initdb.d/init.sql
     ports:
       - "5433:5432"
     healthcheck:
-      test: [ "CMD-SHELL", "pg_isready -U ansar_auth -d ansar_auth_db" ]
+      test: [ "CMD-SHELL", "pg_isready -U ${POSTGRES_USER_AUTH} -d ${POSTGRES_DB_AUTH}" ]
       interval: 5s
       timeout: 3s
-      retries: 10
+      retries: 5
     networks:
       - ansar-net
 
@@ -36,19 +29,19 @@ services:
     image: postgres:16-alpine
     container_name: ansar-db-patients
     environment:
-      POSTGRES_USER: ansar_patients
-      POSTGRES_PASSWORD: ansar_patients_pass
-      POSTGRES_DB: ansar_patients_db
+      POSTGRES_USER: ${POSTGRES_USER_PATIENTS}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD_PATIENTS}
+      POSTGRES_DB: ${POSTGRES_DB_PATIENTS}
     volumes:
       - patients_data:/var/lib/postgresql/data
-      - ./backend-fastapi/patients-service/init.sql:/docker-entrypoint-initdb.d/init.sql
+      - ./backend/patients-service/init.sql:/docker-entrypoint-initdb.d/init.sql
     ports:
       - "5434:5432"
     healthcheck:
-      test: [ "CMD-SHELL", "pg_isready -U ansar_patients -d ansar_patients_db" ]
+      test: [ "CMD-SHELL", "pg_isready -U ${POSTGRES_USER_PATIENTS} -d ${POSTGRES_DB_PATIENTS}" ]
       interval: 5s
       timeout: 3s
-      retries: 10
+      retries: 5
     networks:
       - ansar-net
 
@@ -56,19 +49,19 @@ services:
     image: postgres:16-alpine
     container_name: ansar-db-appointments
     environment:
-      POSTGRES_USER: ansar_appts
-      POSTGRES_PASSWORD: ansar_appts_pass
-      POSTGRES_DB: ansar_appts_db
+      POSTGRES_USER: ${POSTGRES_USER_APPTS}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD_APPTS}
+      POSTGRES_DB: ${POSTGRES_DB_APPTS}
     volumes:
       - appointments_data:/var/lib/postgresql/data
-      - ./backend-fastapi/appointments-service/init.sql:/docker-entrypoint-initdb.d/init.sql
+      - ./backend/appointments-service/init.sql:/docker-entrypoint-initdb.d/init.sql
     ports:
       - "5435:5432"
     healthcheck:
-      test: [ "CMD-SHELL", "pg_isready -U ansar_appts -d ansar_appts_db" ]
+      test: [ "CMD-SHELL", "pg_isready -U ${POSTGRES_USER_APPTS} -d ${POSTGRES_DB_APPTS}" ]
       interval: 5s
       timeout: 3s
-      retries: 10
+      retries: 5
     networks:
       - ansar-net
 
@@ -76,19 +69,19 @@ services:
     image: postgres:16-alpine
     container_name: ansar-db-notifications
     environment:
-      POSTGRES_USER: ansar_notifs
-      POSTGRES_PASSWORD: ansar_notifs_pass
-      POSTGRES_DB: ansar_notifs_db
+      POSTGRES_USER: ${POSTGRES_USER_NOTIFS}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD_NOTIFS}
+      POSTGRES_DB: ${POSTGRES_DB_NOTIFS}
     volumes:
       - notifications_data:/var/lib/postgresql/data
-      - ./backend-fastapi/notifications-service/init.sql:/docker-entrypoint-initdb.d/init.sql
+      - ./backend/notifications-service/init.sql:/docker-entrypoint-initdb.d/init.sql
     ports:
       - "5436:5432"
     healthcheck:
-      test: [ "CMD-SHELL", "pg_isready -U ansar_notifs -d ansar_notifs_db" ]
+      test: [ "CMD-SHELL", "pg_isready -U ${POSTGRES_USER_NOTIFS} -d ${POSTGRES_DB_NOTIFS}" ]
       interval: 5s
       timeout: 3s
-      retries: 10
+      retries: 5
     networks:
       - ansar-net
 
@@ -96,14 +89,14 @@ services:
 
   auth-service:
     build:
-      context: ./backend-fastapi/auth-service
-      dockerfile: Dockerfile
+      context: ./backend
+      dockerfile: auth-service/Dockerfile
     container_name: ansar-auth
     environment:
-      DATABASE_URL: postgresql+asyncpg://ansar_auth:ansar_auth_pass@db-auth:5432/ansar_auth_db
-      JWT_SECRET: ansar_super_secret_key_2026
-      JWT_ALGORITHM: HS256
-      JWT_EXPIRE_MINUTES: "1440"
+      DATABASE_URL: postgresql+asyncpg://${POSTGRES_USER_AUTH}:${POSTGRES_PASSWORD_AUTH}@db-auth:5432/${POSTGRES_DB_AUTH}
+      JWT_SECRET: ${JWT_SECRET}
+      JWT_ALGORITHM: ${JWT_ALGORITHM}
+      JWT_EXPIRE_MINUTES: ${JWT_EXPIRE_MINUTES}
     ports:
       - "8001:8001"
     depends_on:
@@ -115,14 +108,14 @@ services:
 
   patients-service:
     build:
-      context: ./backend-fastapi/patients-service
-      dockerfile: Dockerfile
+      context: ./backend
+      dockerfile: patients-service/Dockerfile
     container_name: ansar-patients
     environment:
-      DATABASE_URL: postgresql+asyncpg://ansar_patients:ansar_patients_pass@db-patients:5432/ansar_patients_db
-      JWT_SECRET: ansar_super_secret_key_2026
-      JWT_ALGORITHM: HS256
-      AUTH_SERVICE_URL: http://auth-service:8001
+      DATABASE_URL: postgresql+asyncpg://${POSTGRES_USER_PATIENTS}:${POSTGRES_PASSWORD_PATIENTS}@db-patients:5432/${POSTGRES_DB_PATIENTS}
+      JWT_SECRET: ${JWT_SECRET}
+      JWT_ALGORITHM: ${JWT_ALGORITHM}
+      AUTH_SERVICE_URL: ${AUTH_SERVICE_URL}
     ports:
       - "8002:8002"
     depends_on:
@@ -134,14 +127,14 @@ services:
 
   appointments-service:
     build:
-      context: ./backend-fastapi/appointments-service
-      dockerfile: Dockerfile
+      context: ./backend
+      dockerfile: appointments-service/Dockerfile
     container_name: ansar-appointments
     environment:
-      DATABASE_URL: postgresql+asyncpg://ansar_appts:ansar_appts_pass@db-appointments:5432/ansar_appts_db
-      JWT_SECRET: ansar_super_secret_key_2026
-      JWT_ALGORITHM: HS256
-      NOTIFICATIONS_SERVICE_URL: http://notifications-service:8004
+      DATABASE_URL: postgresql+asyncpg://${POSTGRES_USER_APPTS}:${POSTGRES_PASSWORD_APPTS}@db-appointments:5432/${POSTGRES_DB_APPTS}
+      JWT_SECRET: ${JWT_SECRET}
+      JWT_ALGORITHM: ${JWT_ALGORITHM}
+      NOTIFICATIONS_SERVICE_URL: ${NOTIFICATIONS_SERVICE_URL}
     ports:
       - "8003:8003"
     depends_on:
@@ -155,20 +148,19 @@ services:
 
   notifications-service:
     build:
-      context: ./backend-fastapi/notifications-service
-      dockerfile: Dockerfile
+      context: ./backend
+      dockerfile: notifications-service/Dockerfile
     container_name: ansar-notifications
     environment:
-      DATABASE_URL: postgresql+asyncpg://ansar_notifs:ansar_notifs_pass@db-notifications:5432/ansar_notifs_db
-      JWT_SECRET: ansar_super_secret_key_2026
-      JWT_ALGORITHM: HS256
-      SMTP_HOST: smtp.gmail.com
-      SMTP_PORT: "587"
-      SMTP_USER: ${SMTP_USER:-}
-      SMTP_PASSWORD: ${SMTP_PASSWORD:-}
-      SMTP_FROM_NAME: "Clínica Dental AN-SAR"
-      SMTP_FROM_EMAIL: no-reply@clinicadental.com
-      USE_CONSOLE_EMAIL: "true"
+      DATABASE_URL: postgresql+asyncpg://${POSTGRES_USER_NOTIFS}:${POSTGRES_PASSWORD_NOTIFS}@db-notifications:5432/${POSTGRES_DB_NOTIFS}
+      JWT_SECRET: ${JWT_SECRET}
+      JWT_ALGORITHM: ${JWT_ALGORITHM}
+      SMTP_HOST: ${SMTP_HOST}
+      SMTP_PORT: ${SMTP_PORT}
+      SMTP_USER: ${SMTP_USER}
+      SMTP_PASSWORD: ${SMTP_PASSWORD}
+      SMTP_FROM_NAME: ${SMTP_FROM_NAME}
+      SMTP_FROM_EMAIL: ${SMTP_FROM_EMAIL}
     ports:
       - "8004:8004"
     depends_on:
@@ -182,14 +174,14 @@ services:
 
   gateway:
     build:
-      context: ./backend-fastapi/gateway
-      dockerfile: Dockerfile
+      context: ./backend
+      dockerfile: gateway/Dockerfile
     container_name: ansar-gateway
     environment:
-      AUTH_SERVICE_URL: http://auth-service:8001
-      PATIENTS_SERVICE_URL: http://patients-service:8002
-      APPOINTMENTS_SERVICE_URL: http://appointments-service:8003
-      NOTIFICATIONS_SERVICE_URL: http://notifications-service:8004
+      AUTH_SERVICE_URL: ${AUTH_SERVICE_URL}
+      PATIENTS_SERVICE_URL: ${PATIENTS_SERVICE_URL}
+      APPOINTMENTS_SERVICE_URL: ${APPOINTMENTS_SERVICE_URL}
+      NOTIFICATIONS_SERVICE_URL: ${NOTIFICATIONS_SERVICE_URL}
     ports:
       - "8000:8000"
     depends_on:

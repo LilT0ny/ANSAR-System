@@ -16,23 +16,33 @@ const Login = () => {
         setError('');
 
         try {
-            // API Call Simulation
-            // const res = await fetch('http://localhost:5000/api/v1/auth/login', { ... });
-            // const data = await res.json();
+            const res = await fetch('http://localhost:8000/api/v1/auth/login', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ email, password }),
+            });
 
-            // MOCK LOGIN SUCCESS
-            if (email === 'dra@ansar.com' && password === 'admin') {
-                localStorage.setItem('token', 'mock-jwt-token-12345');
-                localStorage.setItem('user', JSON.stringify({ name: 'Dra. Ansar', role: 'admin' }));
+            const data = await res.json();
 
-                setTimeout(() => {
-                    navigate('/dashboard');
-                }, 800);
-            } else {
-                throw new Error('Credenciales inválidas');
+            if (!res.ok) {
+                throw new Error(data.detail || 'Credenciales inválidas');
             }
+
+            localStorage.setItem('token', data.token);
+            // Decode token or fetch user profile here if needed, for now mock user object
+            localStorage.setItem('user', JSON.stringify({
+                name: data.full_name || 'Usuario',
+                role: data.role || 'doctor',
+                email: data.email
+            }));
+
+            setTimeout(() => {
+                navigate('/dashboard');
+            }, 800);
+
         } catch (err) {
             setError(err.message || 'Error al iniciar sesión');
+        } finally {
             setLoading(false);
         }
     };
