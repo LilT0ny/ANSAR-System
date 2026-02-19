@@ -17,5 +17,6 @@ async def get_db():
 async def init_db():
     # Keep local models import to ensure registration with Base
     from app.infrastructure.persistence import models
+    print(f"DEBUG: Tables registered in Base.metadata: {list(Base.metadata.tables.keys())}")
     async with engine.begin() as conn:
         await conn.run_sync(Base.metadata.create_all)

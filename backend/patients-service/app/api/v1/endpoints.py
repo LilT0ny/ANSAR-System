@@ -6,7 +6,7 @@ from app.infrastructure.database import get_db
 from app.api.dependencies import get_current_user
 from app.domain.schemas import (
     PatientCreate, PatientUpdate, PatientResponse,
-    ClinicalHistoryCreate, ClinicalHistoryResponse,
+    ClinicalHistoryCreate, ClinicalHistoryUpdate, ClinicalHistoryResponse,
     OdontogramUpdate, OdontogramResponse,
 )
 from app.application import services as service
@@ -69,6 +69,17 @@ async def create_history_record(
     data = body.model_dump()
     data["patient_id"] = patient_id
     return await service.create_clinical_record(db, data, user["id"])
+
+
+@router.put("/{patient_id}/history", response_model=ClinicalHistoryResponse)
+async def upsert_clinical_history(
+    patient_id: int,
+    body: ClinicalHistoryUpdate,
+    db: AsyncSession = Depends(get_db),
+    user=Depends(get_current_user),
+):
+    data = body.model_dump(exclude_unset=True)
+    return await service.upsert_clinical_history(db, patient_id, data, user["id"])
 
 
 # ── Odontogram ──────────────────────────────────────────────────

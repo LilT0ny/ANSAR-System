@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import {
     Calendar as CalendarIcon, CheckCircle, XCircle,
     ChevronLeft, ChevronRight, Clock, Plus, X, User,
@@ -14,6 +14,7 @@ import { es } from 'date-fns/locale';
 import { DayPicker } from 'react-day-picker';
 import 'react-day-picker/style.css';
 import { clsx } from 'clsx';
+import { patientsAPI } from '../services/api';
 
 // ── Treatment Types ───────────────────────────────────────────
 const TREATMENT_TYPES = [
@@ -28,14 +29,7 @@ const TREATMENT_TYPES = [
     'Control',
 ];
 
-// ── Mock Patients ─────────────────────────────────────────────
-const MOCK_PATIENTS = [
-    { id: 1, name: 'Juan Pérez', docId: '12345678' },
-    { id: 2, name: 'María Gómez', docId: '87654321' },
-    { id: 3, name: 'Pedro Torres', docId: '11223344' },
-    { id: 4, name: 'Ana Silva', docId: '55667788' },
-    { id: 5, name: 'Carlos Ruiz', docId: '99001122' },
-];
+// Patients will be loaded from API
 
 
 
@@ -47,6 +41,30 @@ const Appointments = () => {
     const [showToast, setShowToast] = useState(false);
     const [toastMsg, setToastMsg] = useState('');
     const scrollRef = useRef(null);
+
+    // ── API-loaded patients ───────────────────────────────────
+    const [apiPatients, setApiPatients] = useState([]);
+    const [loadingPatients, setLoadingPatients] = useState(true);
+
+    const fetchPatients = useCallback(async () => {
+        setLoadingPatients(true);
+        try {
+            const data = await patientsAPI.list();
+            setApiPatients(data.map(p => ({
+                id: p.id,
+                name: `${p.first_name} ${p.last_name}`,
+                docId: p.document_id || '',
+            })));
+        } catch (err) {
+            console.error('Error fetching patients:', err);
+        } finally {
+            setLoadingPatients(false);
+        }
+    }, []);
+
+    useEffect(() => {
+        fetchPatients();
+    }, [fetchPatients]);
 
     // ── Ortho Block Management ────────────────────────────────
     const [showOrthoPanel, setShowOrthoPanel] = useState(false);
@@ -82,14 +100,8 @@ const Appointments = () => {
         }
     }, []);
 
-    // Mock appointments
-    const [appointments, setAppointments] = useState([
-        { id: 1, patient: 'Juan Pérez', date: '2026-02-11', start: '10:00', end: '11:00', type: 'Consulta General', status: 'confirmada' },
-        { id: 2, patient: 'María Gómez', date: '2026-02-11', start: '11:30', end: '12:15', type: 'Limpieza', status: 'llegó' },
-        { id: 3, patient: 'Pedro Torres', date: '2026-02-11', start: '14:00', end: '15:30', type: 'Ortodoncia', status: 'pendiente' },
-        { id: 4, patient: 'Ana Silva', date: '2026-02-12', start: '09:00', end: '10:00', type: 'Blanqueamiento', status: 'confirmada' },
-        { id: 5, patient: 'Carlos Ruiz', date: '2026-02-13', start: '16:00', end: '17:00', type: 'Consulta General', status: 'completada' },
-    ]);
+    // Appointments (starts empty, loaded from local state — API integration available)
+    const [appointments, setAppointments] = useState([]);
 
     const START_HOUR = 8;
     const END_HOUR = 19; // 9 PM — full day
@@ -222,8 +234,8 @@ const Appointments = () => {
         return orthoBlocks.filter(b => b.date === dateStr);
     };
 
-    // Filtered patients for the dropdown
-    const filteredPatients = MOCK_PATIENTS.filter(p =>
+    // Filtered patients for the dropdown (from API)
+    const filteredPatients = apiPatients.filter(p =>
         `${p.name} ${p.docId}`.toLowerCase().includes(patientSearch.toLowerCase())
     );
 

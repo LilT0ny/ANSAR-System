@@ -11,10 +11,19 @@ class AppointmentCreate(BaseModel):
     end_time: datetime
     reason: Optional[str] = "Consulta General"
     appointment_type: Optional[str] = Field(default="general", pattern="^(general|ortodoncia)$")
+    appointment_date: Optional[date] = None
+    appointment_time: Optional[str] = None
 
 
 class AppointmentUpdate(BaseModel):
-    status: str = Field(..., pattern="^(pendiente|confirmada|completada|cancelada)$")
+    status: Optional[str] = Field(
+        default=None,
+        pattern="^(pendiente|confirmada|atendido|rechazada|anulada|completada)$"
+    )
+    reason: Optional[str] = None
+    doctor_id: Optional[int] = None
+    start_time: Optional[datetime] = None
+    end_time: Optional[datetime] = None
 
 
 class AppointmentResponse(BaseModel):
@@ -26,7 +35,10 @@ class AppointmentResponse(BaseModel):
     reason: Optional[str] = None
     status: str
     appointment_type: str
+    appointment_date: Optional[date] = None
+    appointment_time: Optional[str] = None
     created_at: Optional[datetime] = None
+    updated_at: Optional[datetime] = None
 
     class Config:
         from_attributes = True

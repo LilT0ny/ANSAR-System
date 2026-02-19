@@ -9,8 +9,8 @@ class BaseAppSettings(BaseSettings):
     JWT_ALGORITHM: str = "HS256"
     JWT_EXPIRE_MINUTES: int = 1440
     
-    # Default is blank, must be set in service
-    DATABASE_URL: str
+    # Default is blank, must be set in service if used
+    DATABASE_URL: str | None = None
     
     # Environment control
     DEBUG: bool = False

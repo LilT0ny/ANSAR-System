@@ -67,16 +67,27 @@ async def create_appointment(db: AsyncSession, data: dict):
     return appointment
 
 
-async def update_appointment_status(db: AsyncSession, appointment_id: int, status: str):
+async def update_appointment(db: AsyncSession, appointment_id: int, data: dict):
     result = await db.execute(select(Appointment).where(Appointment.id == appointment_id))
     appt = result.scalar_one_or_none()
     if not appt:
         raise HTTPException(status_code=404, detail="Cita no encontrada.")
 
-    appt.status = status
+    for key, value in data.items():
+        if value is not None:
+            setattr(appt, key, value)
     await db.commit()
     await db.refresh(appt)
     return appt
+
+
+async def delete_appointment(db: AsyncSession, appointment_id: int):
+    result = await db.execute(select(Appointment).where(Appointment.id == appointment_id))
+    appt = result.scalar_one_or_none()
+    if not appt:
+        raise HTTPException(status_code=404, detail="Cita no encontrada.")
+    await db.delete(appt)
+    await db.commit()
 
 
 # ── Ortho Blocks ────────────────────────────────────────────────

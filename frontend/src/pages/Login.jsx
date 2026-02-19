@@ -16,7 +16,8 @@ const Login = () => {
         setError('');
 
         try {
-            const res = await fetch('http://localhost:8000/api/v1/auth/login', {
+            // Use relative URL — Nginx proxies /api/ to gateway:8000
+            const res = await fetch('/api/v1/auth/login', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ email, password }),
@@ -29,11 +30,13 @@ const Login = () => {
             }
 
             localStorage.setItem('token', data.token);
-            // Decode token or fetch user profile here if needed, for now mock user object
+            // Extract user info from response
+            const userData = data.data?.user || {};
             localStorage.setItem('user', JSON.stringify({
-                name: data.full_name || 'Usuario',
-                role: data.role || 'doctor',
-                email: data.email
+                id: userData.id,
+                name: userData.full_name || 'Usuario',
+                role: userData.role || 'doctor',
+                email: userData.email || email,
             }));
 
             setTimeout(() => {

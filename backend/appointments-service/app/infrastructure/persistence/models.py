@@ -11,8 +11,11 @@ class Appointment(Base):
     start_time = Column(DateTime(timezone=True), nullable=False)
     end_time = Column(DateTime(timezone=True), nullable=False)
     reason = Column(String(255), default="Consulta General")
-    status = Column(String(20), default="pendiente")  # pendiente | confirmada | completada | cancelada
+    status = Column(String(20), default="pendiente")
+    # pendiente | confirmada | atendido | rechazada | anulada | completada
     appointment_type = Column(String(30), default="general")  # general | ortodoncia
+    appointment_date = Column(Date, nullable=True, index=True)
+    appointment_time = Column(String(5), nullable=True)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
 

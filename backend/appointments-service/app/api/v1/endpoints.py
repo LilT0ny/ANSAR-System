@@ -43,7 +43,12 @@ async def update_status(
     db: AsyncSession = Depends(get_db),
     _=Depends(get_current_user),
 ):
-    return await service.update_appointment_status(db, appointment_id, body.status)
+    return await service.update_appointment(db, appointment_id, body.model_dump(exclude_unset=True))
+
+
+@router.delete("/api/v1/appointments/{appointment_id}", status_code=204)
+async def delete_appointment(appointment_id: int, db: AsyncSession = Depends(get_db), _=Depends(get_current_user)):
+    await service.delete_appointment(db, appointment_id)
 
 
 # ── Protected: Ortho Blocks ────────────────────────────────────

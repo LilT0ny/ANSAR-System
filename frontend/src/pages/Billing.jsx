@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect, useCallback } from 'react';
 import {
     Search, Plus, Trash2, Eye, Download, FileText, CreditCard, Banknote,
     ArrowRight, CheckCircle, X, Percent, DollarSign, User, ClipboardList,
@@ -6,13 +6,9 @@ import {
 } from 'lucide-react';
 import jsPDF from 'jspdf';
 import 'jspdf-autotable';
+import { patientsAPI } from '../services/api';
 
-// ── Mock Data ─────────────────────────────────────────────────────────
-const MOCK_PATIENTS = [
-    { id: 1, firstName: 'Juan', lastName: 'Pérez', docId: '12345678', email: 'juan@example.com', phone: '555-0123' },
-    { id: 2, firstName: 'María', lastName: 'López', docId: '87654321', email: 'maria@example.com', phone: '555-0987' },
-    { id: 3, firstName: 'Carlos', lastName: 'Ruiz', docId: '11223344', email: 'carlos@example.com', phone: '555-4433' },
-];
+// Patients will be loaded from API
 
 const MOCK_TREATMENTS = {
     1: [
@@ -55,13 +51,40 @@ const Billing = () => {
     const [toastMsg, setToastMsg] = useState('');
     const [savedInvoices, setSavedInvoices] = useState([]);
 
+    // ── Load patients from API ─────────────────────────────────
+    const [apiPatients, setApiPatients] = useState([]);
+    const [loadingPatients, setLoadingPatients] = useState(true);
+
+    const fetchPatients = useCallback(async () => {
+        setLoadingPatients(true);
+        try {
+            const data = await patientsAPI.list();
+            setApiPatients(data.map(p => ({
+                id: p.id,
+                firstName: p.first_name || '',
+                lastName: p.last_name || '',
+                docId: p.document_id || '',
+                email: p.email || '',
+                phone: p.phone || '',
+            })));
+        } catch (err) {
+            console.error('Error loading patients:', err);
+        } finally {
+            setLoadingPatients(false);
+        }
+    }, []);
+
+    useEffect(() => {
+        fetchPatients();
+    }, [fetchPatients]);
+
     // Derived values
     const subtotal = useMemo(() => invoiceItems.reduce((s, i) => s + (i.price * i.qty), 0), [invoiceItems]);
     const taxAmount = useMemo(() => (subtotal - globalDiscount) * (taxRate / 100), [subtotal, taxRate, globalDiscount]);
     const total = useMemo(() => subtotal - globalDiscount + taxAmount, [subtotal, globalDiscount, taxAmount]);
 
-    // Patient search filter
-    const filteredPatients = MOCK_PATIENTS.filter(p =>
+    // Patient search filter (from API data)
+    const filteredPatients = apiPatients.filter(p =>
         `${p.firstName} ${p.lastName} ${p.docId}`.toLowerCase().includes(patientSearch.toLowerCase())
     );
 

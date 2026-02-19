@@ -31,15 +31,15 @@ async def search_patients(db: AsyncSession, query: str):
 
 
 async def create_patient(db: AsyncSession, data: dict):
-    # Check duplicates
+    # Check duplicate document_id (UNIQUE constraint)
     existing = await db.execute(
-        select(Patient).where(
-            (Patient.document_id == data["document_id"])
-            | (Patient.email == data.get("email"))
-        )
+        select(Patient).where(Patient.document_id == data["document_id"])
     )
     if existing.scalar_one_or_none():
-        raise HTTPException(status_code=400, detail="El documento o email ya está registrado.")
+        raise HTTPException(
+            status_code=400,
+            detail="Ya existe un paciente con este documento de identidad."
+        )
 
     patient = Patient(**data)
     db.add(patient)
@@ -66,6 +66,7 @@ async def delete_patient(db: AsyncSession, patient_id: int):
 
 # ── Clinical History ────────────────────────────────────────────
 async def get_clinical_history(db: AsyncSession, patient_id: int):
+    """Get the clinical history record for a patient (one record per patient)."""
     result = await db.execute(
         select(ClinicalHistory)
         .where(ClinicalHistory.patient_id == patient_id)
@@ -74,12 +75,39 @@ async def get_clinical_history(db: AsyncSession, patient_id: int):
     return result.scalars().all()
 
 
+async def get_clinical_history_single(db: AsyncSession, patient_id: int):
+    """Get or return None for the single clinical history of a patient."""
+    result = await db.execute(
+        select(ClinicalHistory).where(ClinicalHistory.patient_id == patient_id)
+    )
+    return result.scalar_one_or_none()
+
+
 async def create_clinical_record(db: AsyncSession, data: dict, user_id: int):
     record = ClinicalHistory(**data, created_by=user_id)
     db.add(record)
     await db.commit()
     await db.refresh(record)
     return record
+
+
+async def upsert_clinical_history(db: AsyncSession, patient_id: int, data: dict, user_id: int):
+    """Create or update the clinical history for a patient."""
+    existing = await get_clinical_history_single(db, patient_id)
+
+    if existing:
+        for key, value in data.items():
+            if key not in ("patient_id", "id") and value is not None:
+                setattr(existing, key, value)
+        await db.commit()
+        await db.refresh(existing)
+        return existing
+    else:
+        record = ClinicalHistory(patient_id=patient_id, created_by=user_id, **data)
+        db.add(record)
+        await db.commit()
+        await db.refresh(record)
+        return record
 
 
 # ── Odontogram ──────────────────────────────────────────────────
