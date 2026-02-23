@@ -2,11 +2,11 @@ import React, { useState, useMemo, useEffect, useCallback } from 'react';
 import {
     Search, Plus, Trash2, Eye, Download, FileText, CreditCard, Banknote,
     ArrowRight, CheckCircle, X, Percent, DollarSign, User, ClipboardList,
-    ChevronDown, Package
+    ChevronDown, Package, Mail, AlertCircle, Loader2
 } from 'lucide-react';
 import jsPDF from 'jspdf';
 import 'jspdf-autotable';
-import { patientsAPI } from '../services/api';
+import { patientsAPI, notificationsAPI } from '../services/api';
 
 // Patients will be loaded from API
 
@@ -66,6 +66,7 @@ const Billing = () => {
                 docId: p.document_id || '',
                 email: p.email || '',
                 phone: p.phone || '',
+                debt: Number(p.debt || 0),
             })));
         } catch (err) {
             console.error('Error loading patients:', err);
@@ -255,7 +256,9 @@ const Billing = () => {
         toast('PDF generado y descargado exitosamente.');
     };
 
-    const handleFinalize = () => {
+    const [sendingNotification, setSendingNotification] = useState(false);
+
+    const handleFinalize = async () => {
         if (!selectedPatient || invoiceItems.length === 0) {
             toast('Selecciona un paciente y agrega al menos un ítem.');
             return;
@@ -269,6 +272,41 @@ const Billing = () => {
         };
         setSavedInvoices([inv, ...savedInvoices]);
         generatePDF();
+
+        // Update patient debt on the backend
+        try {
+            const newDebt = (selectedPatient.debt || 0) + total;
+            await patientsAPI.update(selectedPatient.id, { debt: newDebt });
+
+            // Send email notification if patient has email and debt > 0
+            if (selectedPatient.email && newDebt > 0) {
+                setSendingNotification(true);
+                try {
+                    await notificationsAPI.send({
+                        patient_id: selectedPatient.id,
+                        recipient_email: selectedPatient.email,
+                        notification_type: 'EMAIL',
+                        subject: `AN-SAR – Factura pendiente de pago`,
+                        message_content: `Estimado/a ${selectedPatient.firstName} ${selectedPatient.lastName},\n\nLe informamos que se ha generado una factura por $${total.toFixed(2)}.\nSu saldo pendiente actual es: $${newDebt.toFixed(2)}.\n\nPor favor, acérquese a la clínica para realizar su pago.\n\nAtentamente,\nClínica AN-SAR`,
+                    });
+                    toast('Factura guardada y notificación enviada al paciente.');
+                } catch (notifErr) {
+                    console.error('Error sending notification:', notifErr);
+                    toast('Factura guardada. No se pudo enviar la notificación.');
+                } finally {
+                    setSendingNotification(false);
+                }
+            } else {
+                toast('Factura guardada y deuda actualizada.');
+            }
+
+            // Refresh patients to update local debt values
+            fetchPatients();
+        } catch (err) {
+            console.error('Error updating patient debt:', err);
+            toast('Factura generada, pero no se pudo actualizar la deuda.');
+        }
+
         setShowPreview(false);
         setInvoiceItems([]);
         setSelectedPatient(null);
@@ -333,7 +371,30 @@ const Billing = () => {
                         </div>
                     </div>
 
-                    {/* Import from Treatments */}
+                    {/* Patient Debt Info */}
+                    {selectedPatient && (
+                        <div className={`rounded-2xl shadow-sm border p-4 flex items-center gap-4 ${selectedPatient.debt > 0 ? 'bg-red-50 border-red-200' : 'bg-green-50 border-green-200'}`}>
+                            <div className={`p-3 rounded-xl ${selectedPatient.debt > 0 ? 'bg-red-100' : 'bg-green-100'}`}>
+                                <DollarSign size={20} className={selectedPatient.debt > 0 ? 'text-red-500' : 'text-green-500'} />
+                            </div>
+                            <div className="flex-1">
+                                <p className="text-sm font-bold text-gray-800">
+                                    Deuda actual: <span className={selectedPatient.debt > 0 ? 'text-red-600' : 'text-green-600'}>
+                                        ${selectedPatient.debt.toFixed(2)}
+                                    </span>
+                                </p>
+                                <p className="text-xs text-gray-500">
+                                    {selectedPatient.email
+                                        ? <>Se notificará a <span className="font-medium">{selectedPatient.email}</span> al finalizar</>
+                                        : <span className="text-amber-600">⚠ Sin email registrado — no se podrá enviar notificación</span>
+                                    }
+                                </p>
+                            </div>
+                            {selectedPatient.debt > 0 && (
+                                <AlertCircle size={18} className="text-red-400" />
+                            )}
+                        </div>
+                    )}
                     {selectedPatient && (
                         <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
                             <button

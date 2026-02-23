@@ -7,19 +7,36 @@ import { patientsAPI, appointmentsAPI } from '../services/api';
 const Dashboard = () => {
     const navigate = useNavigate();
     const [patientsCount, setPatientsCount] = useState(0);
+    const [pendingAppointments, setPendingAppointments] = useState(0);
+    const [totalDebt, setTotalDebt] = useState(0);
     const [recentPatients, setRecentPatients] = useState([]);
     const [loading, setLoading] = useState(true);
 
     const fetchDashboardData = useCallback(async () => {
         setLoading(true);
         try {
+            // Fetch patients
             const patients = await patientsAPI.list();
             setPatientsCount(patients.length);
-            // Get the 3 most recent patients for "Próximas Citas" mock display
+
+            // Calculate total debt
+            const debt = patients.reduce((sum, p) => sum + Number(p.debt || 0), 0);
+            setTotalDebt(debt);
+
+            // Get the 3 most recent patients
             const sorted = [...patients].sort((a, b) =>
                 new Date(b.created_at || 0) - new Date(a.created_at || 0)
             );
             setRecentPatients(sorted.slice(0, 3));
+
+            // Fetch appointments for pending count
+            try {
+                const appts = await appointmentsAPI.list();
+                const pending = appts.filter(a => a.status === 'pendiente' || a.status === 'confirmada');
+                setPendingAppointments(pending.length);
+            } catch (e) {
+                console.log('Could not load appointments:', e.message);
+            }
         } catch (err) {
             console.error('Error loading dashboard data:', err);
             if (err.status === 401) navigate('/login');
@@ -34,8 +51,8 @@ const Dashboard = () => {
 
     const kpis = [
         { label: 'Total Pacientes', value: loading ? '...' : String(patientsCount), icon: Users, color: 'text-blue-500', bg: 'bg-blue-50' },
-        { label: 'Citas Pendientes', value: '—', icon: Calendar, color: 'text-primary', bg: 'bg-green-50' },
-        { label: 'Ingresos del Mes', value: '—', icon: DollarSign, color: 'text-purple-500', bg: 'bg-purple-50' },
+        { label: 'Citas Pendientes', value: loading ? '...' : String(pendingAppointments), icon: Calendar, color: 'text-primary', bg: 'bg-green-50' },
+        { label: 'Deuda Total', value: loading ? '...' : `$${totalDebt.toFixed(2)}`, icon: DollarSign, color: 'text-purple-500', bg: 'bg-purple-50' },
         { label: 'Tratamientos', value: '—', icon: Activity, color: 'text-orange-500', bg: 'bg-orange-50' },
     ];
 
@@ -99,16 +116,25 @@ const Dashboard = () => {
                                         </div>
                                         <div>
                                             <p className="text-sm font-bold text-gray-800">{p.first_name} {p.last_name}</p>
-                                            <p className="text-xs text-gray-500">{p.document_id || '—'}</p>
+                                            <p className="text-xs text-gray-500">
+                                                {p.document_id || '—'}
+                                                {p.gender ? ` · ${p.gender.charAt(0).toUpperCase() + p.gender.slice(1)}` : ''}
+                                            </p>
                                         </div>
                                     </div>
                                     <div className="text-right">
                                         <p className="text-xs text-gray-400">
                                             {p.created_at ? new Date(p.created_at).toLocaleDateString('es-ES') : '—'}
                                         </p>
-                                        <span className="text-[10px] px-2 py-0.5 rounded-full bg-green-100 text-green-600">
-                                            Activo
-                                        </span>
+                                        {Number(p.debt || 0) > 0 ? (
+                                            <span className="text-[10px] px-2 py-0.5 rounded-full bg-red-50 text-red-600 font-semibold">
+                                                Deuda: ${Number(p.debt).toFixed(2)}
+                                            </span>
+                                        ) : (
+                                            <span className="text-[10px] px-2 py-0.5 rounded-full bg-green-100 text-green-600">
+                                                Al día
+                                            </span>
+                                        )}
                                     </div>
                                 </div>
                             ))

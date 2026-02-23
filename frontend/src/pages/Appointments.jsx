@@ -3,7 +3,7 @@ import {
     Calendar as CalendarIcon, CheckCircle, XCircle,
     ChevronLeft, ChevronRight, Clock, Plus, X, User,
     MoreVertical, AlertCircle, Settings, Link2, Copy,
-    Trash2, ShieldCheck
+    Trash2, ShieldCheck, Mail, Loader2
 } from 'lucide-react';
 import {
     format, isSameDay, parseISO, startOfWeek,
@@ -14,7 +14,7 @@ import { es } from 'date-fns/locale';
 import { DayPicker } from 'react-day-picker';
 import 'react-day-picker/style.css';
 import { clsx } from 'clsx';
-import { patientsAPI } from '../services/api';
+import { patientsAPI, appointmentsAPI, notificationsAPI } from '../services/api';
 
 // ── Treatment Types ───────────────────────────────────────────
 const TREATMENT_TYPES = [
@@ -54,6 +54,8 @@ const Appointments = () => {
                 id: p.id,
                 name: `${p.first_name} ${p.last_name}`,
                 docId: p.document_id || '',
+                email: p.email || '',
+                phone: p.phone || '',
             })));
         } catch (err) {
             console.error('Error fetching patients:', err);
@@ -68,16 +70,17 @@ const Appointments = () => {
 
     // ── Ortho Block Management ────────────────────────────────
     const [showOrthoPanel, setShowOrthoPanel] = useState(false);
-    const [orthoBlocks, setOrthoBlocks] = useState([
-        { id: 1, date: '2026-02-23', startTime: '12:00', endTime: '17:00', label: 'Lun 23 Feb – Ortodoncia' },
-    ]);
+    // orthoBlocks state moved below to consolidated state
+    const [selectedPatientForNotif, setSelectedPatientForNotif] = useState(null);
+    const [isNotifying, setIsNotifying] = useState(false);
     const [newBlock, setNewBlock] = useState({ date: format(new Date(), 'yyyy-MM-dd'), startTime: '09:00', endTime: '12:00' });
     const [showLinkModal, setShowLinkModal] = useState(false);
     const [linkCopied, setLinkCopied] = useState(false);
 
     // New event form
     const [newEvent, setNewEvent] = useState({
-        patient: '',
+        patient: '', // Display name
+        patientId: null, // Actual ID
         date: format(new Date(), 'yyyy-MM-dd'),
         start: '09:00',
         end: '10:00',
@@ -85,7 +88,9 @@ const Appointments = () => {
         status: 'pendiente',
     });
     const [patientSearch, setPatientSearch] = useState('');
+    const [orthoSearch, setOrthoSearch] = useState('');
     const [showPatientDropdown, setShowPatientDropdown] = useState(false);
+    const [showOrthoPatientDropdown, setShowOrthoPatientDropdown] = useState(false);
 
     // Clock update
     useEffect(() => {
@@ -100,8 +105,59 @@ const Appointments = () => {
         }
     }, []);
 
-    // Appointments (starts empty, loaded from local state — API integration available)
+    // Appointments & Ortho Blocks State
     const [appointments, setAppointments] = useState([]);
+    const [orthoBlocks, setOrthoBlocks] = useState([]);
+    const [loadingData, setLoadingData] = useState(false);
+
+    // Fetch Data
+    const fetchData = useCallback(async () => {
+        setLoadingData(true);
+        try {
+            const [appts, blocks] = await Promise.all([
+                appointmentsAPI.list(),
+                appointmentsAPI.listOrthoBlocks()
+            ]);
+
+            // Map API appointments to frontend format
+            const mappedAppts = appts.map(a => {
+                const startDate = parseISO(a.start_time);
+                const endDate = parseISO(a.end_time);
+                return {
+                    id: a.id,
+                    title: a.reason || 'Cita',
+                    start: format(startDate, 'HH:mm'),
+                    end: format(endDate, 'HH:mm'),
+                    date: a.appointment_date || format(startDate, 'yyyy-MM-dd'),
+                    type: a.appointment_type,
+                    status: a.status,
+                    patientId: a.patient_id,
+                    patientName: a.patient ? `${a.patient.first_name} ${a.patient.last_name}` : 'Paciente',
+                };
+            });
+            setAppointments(mappedAppts);
+
+            // Map Ortho Blocks
+            const mappedBlocks = blocks.map(b => ({
+                id: b.id,
+                date: b.date,
+                startTime: b.start_time,
+                endTime: b.end_time,
+                label: b.label || 'Bloque Ortodoncia',
+            }));
+            setOrthoBlocks(mappedBlocks);
+
+        } catch (err) {
+            console.error('Error fetching calendar data:', err);
+            toast('Error al cargar citas.');
+        } finally {
+            setLoadingData(false);
+        }
+    }, []);
+
+    useEffect(() => {
+        fetchData();
+    }, [fetchData]);
 
     const START_HOUR = 8;
     const END_HOUR = 19; // 9 PM — full day
@@ -114,21 +170,38 @@ const Appointments = () => {
     const weekDays = eachDayOfInterval({ start: weekStart, end: weekEnd });
 
     // ── Status styles (using system green) ────────────────────
+    // ── Status styles (using system green) ────────────────────
     const getStatusStyles = (status) => {
         switch (status) {
             case 'confirmada': return 'bg-primary/10 border-l-4 border-primary text-green-800';
             case 'pendiente': return 'bg-yellow-50 border-l-4 border-yellow-400 text-yellow-800';
             case 'completada': return 'bg-gray-100 border-l-4 border-gray-400 text-gray-600';
-            case 'llegó': return 'bg-emerald-50 border-l-4 border-emerald-500 text-emerald-800';
-            case 'no_llegó': return 'bg-red-50 border-l-4 border-red-400 text-red-700';
+            case 'llegó':
+            case 'atendido':
+                return 'bg-emerald-50 border-l-4 border-emerald-500 text-emerald-800';
+            case 'no_llegó':
+            case 'anulada':
+            case 'rechazada':
+                return 'bg-red-50 border-l-4 border-red-400 text-red-700';
             default: return 'bg-gray-50 border-l-4 border-gray-300 text-gray-600';
         }
     };
 
-    const handleAttendance = (id, status) => {
-        setAppointments(appointments.map(appt =>
-            appt.id === id ? { ...appt, status } : appt
-        ));
+    const handleAttendance = async (id, statusUI) => {
+        // Map UI status to backend status
+        let backendStatus = statusUI;
+        if (statusUI === 'llegó') backendStatus = 'atendido';
+        if (statusUI === 'no_llegó') backendStatus = 'anulada';
+
+        try {
+            await appointmentsAPI.update(id, { status: backendStatus });
+            // Optimistic update
+            setAppointments(prev => prev.map(a => a.id === id ? { ...a, status: backendStatus } : a));
+            toast(`Estado actualizado: ${backendStatus}`);
+        } catch (err) {
+            console.error(err);
+            toast('Error al actualizar estado.');
+        }
     };
 
     const getPositionStyle = (start, end) => {
@@ -149,41 +222,46 @@ const Appointments = () => {
     };
 
     // ── Create Event Handler ──────────────────────────────────
-    const handleCreateEvent = () => {
+    const handleCreateEvent = async () => {
         if (!newEvent.patient || !newEvent.date || !newEvent.start || !newEvent.end) {
             toast('Completa todos los campos requeridos.');
             return;
         }
-        // Validate start < end
         if (newEvent.start >= newEvent.end) {
             toast('La hora de inicio debe ser antes de la hora de fin.');
             return;
         }
-        const event = {
-            ...newEvent,
-            id: Date.now(),
-        };
-        setAppointments([...appointments, event]);
-        setShowCreateModal(false);
-        setNewEvent({
-            patient: '',
-            date: format(new Date(), 'yyyy-MM-dd'),
-            start: '09:00',
-            end: '10:00',
-            type: 'Consulta General',
-            status: 'pendiente',
-        });
-        setPatientSearch('');
-        toast('Cita creada exitosamente.');
+
+        try {
+            // Construct full ISO strings for backend
+            const startDateTime = new Date(`${newEvent.date}T${newEvent.start}`);
+            const endDateTime = new Date(`${newEvent.date}T${newEvent.end}`);
+
+            await appointmentsAPI.create({
+                patient_id: newEvent.patientId, // Use the stored ID
+                doctor_id: 1,
+                appointment_date: newEvent.date,
+                start_time: startDateTime.toISOString(),
+                end_time: endDateTime.toISOString(),
+                reason: newEvent.type,
+                status: newEvent.status,
+                appointment_type: newEvent.type
+            });
+            toast('Cita creada exitosamente.');
+            setShowCreateModal(false);
+            fetchData(); // Reload
+        } catch (err) {
+            console.error(err);
+            toast('Error al crear cita: ' + err.message);
+        }
     };
 
     // ── Ortho Block Handlers ──────────────────────────────────
-    const handleAddOrthoBlock = () => {
+    const handleAddOrthoBlock = async () => {
         if (!newBlock.date) {
             toast('Selecciona una fecha.');
             return;
         }
-        // Don't allow past dates
         const blockDate = parseISO(newBlock.date);
         if (blockDate < new Date(new Date().setHours(0, 0, 0, 0))) {
             toast('No se puede crear un bloque en una fecha pasada.');
@@ -193,28 +271,62 @@ const Appointments = () => {
             toast('La hora de inicio debe ser antes de la hora de fin.');
             return;
         }
-        // Check for duplicate or overlapping blocks on the same date
-        const isDuplicate = orthoBlocks.some(b => {
-            if (b.date !== newBlock.date) return false;
-            return newBlock.startTime < b.endTime && newBlock.endTime > b.startTime;
-        });
-        if (isDuplicate) {
-            toast('Ya existe un bloque en esa fecha y horario. No se puede repetir.');
-            return;
+
+        try {
+            const dateLabel = format(blockDate, "EEE d MMM", { locale: es });
+            await appointmentsAPI.createOrthoBlock({
+                date: newBlock.date,
+                start_time: newBlock.startTime,
+                end_time: newBlock.endTime,
+                label: `${dateLabel} – Ortodoncia`
+            });
+            toast('Bloque de ortodoncia creado.');
+            fetchData();
+        } catch (err) {
+            console.error(err);
+            toast('Error al crear bloque: ' + err.message);
         }
-        const dateLabel = format(blockDate, "EEE d MMM", { locale: es });
-        const block = {
-            ...newBlock,
-            id: Date.now(),
-            label: `${dateLabel} – Ortodoncia`,
-        };
-        setOrthoBlocks([...orthoBlocks, block]);
-        toast('Bloque de ortodoncia creado.');
     };
 
-    const handleRemoveOrthoBlock = (id) => {
-        setOrthoBlocks(orthoBlocks.filter(b => b.id !== id));
-        toast('Bloque eliminado.');
+    const handleRemoveOrthoBlock = async (id) => {
+        try {
+            await appointmentsAPI.deleteOrthoBlock(id);
+            toast('Bloque eliminado.');
+            fetchData();
+        } catch (err) {
+            toast('Error al eliminar bloque.');
+        }
+    };
+
+    const handleNotifyPatient = async () => {
+        if (!selectedPatientForNotif) {
+            toast('Por favor selecciona un paciente.');
+            return;
+        }
+        setIsNotifying(true);
+        try {
+            // Find patient details
+            const pat = apiPatients.find(p => p.id === parseInt(selectedPatientForNotif));
+            if (!pat || !pat.email) {
+                toast('El paciente seleccionado no tiene email registrado.');
+                return;
+            }
+
+            await notificationsAPI.send({
+                patient_id: pat.id,
+                recipient_email: pat.email, // Ensure email field is populated in apiPatients
+                notification_type: 'EMAIL',
+                subject: 'AN-SAR – Turnos de Ortodoncia Disponibles',
+                message_content: `Hola ${pat.name},\n\nYa están disponibles los nuevos horarios para ortodoncia.\n\nPuedes reservar tu cita aquí:\n${orthoBookingLink}\n\n¡Te esperamos!`,
+            });
+            toast(`Notificación enviada a ${pat.name}`);
+            setSelectedPatientForNotif(null);
+        } catch (err) {
+            console.error(err);
+            toast('Error al enviar notificación.');
+        } finally {
+            setIsNotifying(false);
+        }
     };
 
     const orthoBookingLink = `${window.location.origin}/reservar/ortodoncia?token=${btoa('ortho-' + Date.now()).slice(0, 12)}`;
@@ -237,6 +349,10 @@ const Appointments = () => {
     // Filtered patients for the dropdown (from API)
     const filteredPatients = apiPatients.filter(p =>
         `${p.name} ${p.docId}`.toLowerCase().includes(patientSearch.toLowerCase())
+    );
+
+    const filteredOrthoPatients = apiPatients.filter(p =>
+        `${p.name} ${p.docId}`.toLowerCase().includes(orthoSearch.toLowerCase())
     );
 
     // Dates with appointments for mini-calendar dots
@@ -289,7 +405,7 @@ const Appointments = () => {
 
             {/* ── Ortho Config Panel (CA 1, 2, 3) ─────────────────── */}
             {showOrthoPanel && (
-                <div className="rounded-2xl p-6 animate-in fade-in slide-in-from-top-2 duration-300" style={{ backgroundColor: 'rgba(140,198,62,0.04)', border: '2px solid rgba(140,198,62,0.2)' }}>
+                <div className="rounded-2xl p-6 animate-in fade-in slide-in-from-top-2 duration-300 mb-6" style={{ backgroundColor: 'rgba(140,198,62,0.04)', border: '2px solid rgba(140,198,62,0.2)' }}>
                     <div className="flex items-center justify-between mb-5">
                         <div className="flex items-center gap-3">
                             <div className="p-2 rounded-xl" style={{ backgroundColor: 'rgba(140,198,62,0.12)' }}>
@@ -305,61 +421,133 @@ const Appointments = () => {
                         </button>
                     </div>
 
-                    {/* Add new block */}
-                    <div className="flex flex-wrap items-end gap-3 mb-5 bg-white rounded-xl p-4 border border-gray-100">
-                        <div>
-                            <label className="block text-xs font-bold text-gray-500 mb-1">Fecha</label>
-                            <input
-                                type="date"
-                                value={newBlock.date}
-                                onChange={e => setNewBlock({ ...newBlock, date: e.target.value })}
-                                min={format(new Date(), 'yyyy-MM-dd')}
-                                className="border border-gray-200 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none bg-white"
-                            />
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+                        {/* LEFT: Add new block */}
+                        <div className="bg-white rounded-xl p-5 border border-gray-100 shadow-sm">
+                            <h4 className="font-bold text-gray-700 mb-3 text-sm">Nuevo Bloque</h4>
+                            <div className="space-y-3">
+                                <div>
+                                    <label className="block text-xs font-bold text-gray-500 mb-1">Fecha</label>
+                                    <input
+                                        type="date"
+                                        value={newBlock.date}
+                                        onChange={e => setNewBlock({ ...newBlock, date: e.target.value })}
+                                        min={format(new Date(), 'yyyy-MM-dd')}
+                                        className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none bg-gray-50"
+                                    />
+                                </div>
+                                <div className="grid grid-cols-2 gap-3">
+                                    <div>
+                                        <label className="block text-xs font-bold text-gray-500 mb-1">Inicio</label>
+                                        <select value={newBlock.startTime} onChange={e => setNewBlock({ ...newBlock, startTime: e.target.value })}
+                                            className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none bg-gray-50">
+                                            {timeOptions.map(t => <option key={t} value={t}>{t}</option>)}
+                                        </select>
+                                    </div>
+                                    <div>
+                                        <label className="block text-xs font-bold text-gray-500 mb-1">Fin</label>
+                                        <select value={newBlock.endTime} onChange={e => setNewBlock({ ...newBlock, endTime: e.target.value })}
+                                            className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none bg-gray-50">
+                                            {timeOptions.map(t => <option key={t} value={t}>{t}</option>)}
+                                        </select>
+                                    </div>
+                                </div>
+                                <button type="button" onClick={handleAddOrthoBlock}
+                                    className="w-full text-white px-5 py-2.5 rounded-lg font-bold text-sm flex items-center justify-center gap-2 transition-all shadow-md hover:opacity-90 mt-2"
+                                    style={{ backgroundColor: '#8CC63E' }}>
+                                    <Plus size={16} /> Crear Bloque
+                                </button>
+                            </div>
                         </div>
-                        <div>
-                            <label className="block text-xs font-bold text-gray-500 mb-1">Hora Inicio</label>
-                            <select value={newBlock.startTime} onChange={e => setNewBlock({ ...newBlock, startTime: e.target.value })}
-                                className="border border-gray-200 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none bg-white">
-                                {timeOptions.map(t => <option key={t} value={t}>{t}</option>)}
-                            </select>
+
+                        {/* RIGHT: Notify Patient */}
+                        <div className="bg-white rounded-xl p-5 border border-gray-100 shadow-sm">
+                            <h4 className="font-bold text-gray-700 mb-3 text-sm">Notificar Paciente</h4>
+                            <p className="text-xs text-gray-500 mb-3">Envía el enlace de reserva a un paciente específico.</p>
+
+                            <div className="space-y-3">
+                                <div className="relative">
+                                    <div className="flex items-center border border-gray-200 rounded-lg px-3 py-2 focus-within:ring-2 focus-within:ring-primary/30 focus-within:border-primary transition-all bg-gray-50">
+                                        <User className="text-gray-400 mr-2" size={16} />
+                                        <input
+                                            type="text"
+                                            placeholder="Buscar paciente..."
+                                            className="flex-1 outline-none text-gray-700 placeholder-gray-400 text-sm bg-transparent"
+                                            value={selectedPatientForNotif ? (apiPatients.find(p => p.id === parseInt(selectedPatientForNotif))?.name || '') : orthoSearch}
+                                            onChange={(e) => {
+                                                setOrthoSearch(e.target.value);
+                                                setSelectedPatientForNotif(null);
+                                                setShowOrthoPatientDropdown(true);
+                                            }}
+                                            onFocus={() => setShowOrthoPatientDropdown(true)}
+                                        />
+                                        {selectedPatientForNotif && (
+                                            <button onClick={() => { setSelectedPatientForNotif(null); setOrthoSearch(''); }} className="text-gray-400 hover:text-red-500">
+                                                <X size={16} />
+                                            </button>
+                                        )}
+                                    </div>
+                                    {showOrthoPatientDropdown && !selectedPatientForNotif && (
+                                        <div className="absolute z-20 mt-1 w-full bg-white border border-gray-200 rounded-xl shadow-lg max-h-40 overflow-y-auto">
+                                            {filteredOrthoPatients.length === 0 ? (
+                                                <div className="px-4 py-3 text-gray-400 text-sm">No se encontraron pacientes.</div>
+                                            ) : filteredOrthoPatients.map(p => (
+                                                <button
+                                                    key={p.id}
+                                                    onClick={() => {
+                                                        setSelectedPatientForNotif(p.id);
+                                                        setOrthoSearch('');
+                                                        setShowOrthoPatientDropdown(false);
+                                                    }}
+                                                    className="w-full text-left px-4 py-2 hover:bg-primary/5 flex items-center gap-3 transition-colors border-b border-gray-50 last:border-0"
+                                                >
+                                                    <div className="h-8 w-8 rounded-lg bg-primary/10 text-primary flex items-center justify-center font-bold text-xs">
+                                                        {p.name.slice(0, 2)}
+                                                    </div>
+                                                    <div>
+                                                        <p className="font-semibold text-gray-800 text-xs">{p.name}</p>
+                                                    </div>
+                                                </button>
+                                            ))}
+                                        </div>
+                                    )}
+                                </div>
+
+                                <button
+                                    type="button"
+                                    onClick={handleNotifyPatient}
+                                    disabled={isNotifying || !selectedPatientForNotif}
+                                    className="w-full bg-blue-600 hover:bg-blue-700 disabled:bg-gray-300 disabled:cursor-not-allowed text-white px-5 py-2.5 rounded-lg font-bold text-sm flex items-center justify-center gap-2 transition-all shadow-md mt-2"
+                                >
+                                    {isNotifying ? <Loader2 className="animate-spin" size={16} /> : <Mail size={16} />}
+                                    Enviar Notificación
+                                </button>
+                            </div>
                         </div>
-                        <div>
-                            <label className="block text-xs font-bold text-gray-500 mb-1">Hora Fin</label>
-                            <select value={newBlock.endTime} onChange={e => setNewBlock({ ...newBlock, endTime: e.target.value })}
-                                className="border border-gray-200 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none bg-white">
-                                {timeOptions.map(t => <option key={t} value={t}>{t}</option>)}
-                            </select>
-                        </div>
-                        <button type="button" onClick={handleAddOrthoBlock}
-                            className="text-white px-5 py-2 rounded-lg font-bold text-sm flex items-center gap-2 transition-all shadow-md hover:opacity-90"
-                            style={{ backgroundColor: '#8CC63E' }}>
-                            <Plus size={16} /> Agregar Bloque
-                        </button>
                     </div>
 
                     {/* Active blocks list */}
                     {orthoBlocks.length === 0 ? (
-                        <p className="text-sm text-gray-400 text-center py-4">No hay bloques de ortodoncia configurados.</p>
+                        <p className="text-sm text-gray-400 text-center py-4 bg-white rounded-xl border border-gray-100 border-dashed">No hay bloques de ortodoncia configurados.</p>
                     ) : (
                         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
                             {orthoBlocks.map(block => (
-                                <div key={block.id} className="bg-white rounded-xl p-4 flex items-center justify-between group transition-all" style={{ border: '2px solid rgba(140,198,62,0.2)' }}
-                                    onMouseEnter={e => e.currentTarget.style.borderColor = 'rgba(140,198,62,0.5)'}
-                                    onMouseLeave={e => e.currentTarget.style.borderColor = 'rgba(140,198,62,0.2)'}>
+                                <div key={block.id} className="bg-white rounded-xl p-4 flex items-center justify-between group transition-all shadow-sm" style={{ border: '1px solid rgba(140,198,62,0.3)' }}
+                                    onMouseEnter={e => e.currentTarget.style.borderColor = 'rgba(140,198,62,0.8)'}
+                                    onMouseLeave={e => e.currentTarget.style.borderColor = 'rgba(140,198,62,0.3)'}>
                                     <div className="flex items-center gap-3">
                                         <div className="p-2 rounded-lg" style={{ backgroundColor: 'rgba(140,198,62,0.12)' }}>
                                             <CalendarIcon style={{ color: '#8CC63E' }} size={16} />
                                         </div>
                                         <div>
                                             <p className="font-bold text-sm text-gray-800 capitalize">
-                                                {format(parseISO(block.date), "EEEE d 'de' MMMM, yyyy", { locale: es })}
+                                                {format(parseISO(block.date), "EEE d MMM", { locale: es })}
                                             </p>
-                                            <p className="text-xs text-gray-400">{block.startTime} – {block.endTime}</p>
+                                            <p className="text-xs text-gray-500">{block.startTime} – {block.endTime}</p>
                                         </div>
                                     </div>
                                     <button type="button" onClick={() => handleRemoveOrthoBlock(block.id)}
-                                        className="text-gray-300 hover:text-red-500 p-1 rounded-lg hover:bg-red-50 transition-colors opacity-0 group-hover:opacity-100">
+                                        className="text-gray-300 hover:text-red-500 p-1.5 rounded-lg hover:bg-red-50 transition-colors opacity-0 group-hover:opacity-100">
                                         <Trash2 size={16} />
                                     </button>
                                 </div>
@@ -727,7 +915,7 @@ const Appointments = () => {
                                                     type="button"
                                                     key={p.id}
                                                     onClick={() => {
-                                                        setNewEvent(prev => ({ ...prev, patient: p.name }));
+                                                        setNewEvent(prev => ({ ...prev, patient: p.name, patientId: p.id }));
                                                         setPatientSearch('');
                                                         setShowPatientDropdown(false);
                                                     }}

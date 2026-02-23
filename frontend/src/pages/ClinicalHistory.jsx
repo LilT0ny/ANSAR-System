@@ -4,13 +4,14 @@ import { useForm } from 'react-hook-form';
 import clsx from 'clsx';
 import {
     User, FileText, Activity, Layers, Edit2, Save, X, ArrowLeft,
-    CheckCircle, AlertCircle, Calendar, Phone, Mail, MapPin, Briefcase, Loader2
+    CheckCircle, AlertCircle, Calendar, Phone, Mail, MapPin, Briefcase,
+    Loader2, Search, Users
 } from 'lucide-react';
 import Odontogram from '../components/Odontogram';
 import OrthodonticGallery from '../components/OrthodonticGallery';
 import { patientsAPI } from '../services/api';
 
-// Age calculation helper
+// ── Age calculation helper ────────────────────────────────────
 const calculateAge = (birthDate) => {
     if (!birthDate) return '—';
     const today = new Date();
@@ -21,9 +22,208 @@ const calculateAge = (birthDate) => {
     return age;
 };
 
+
+// ═══════════════════════════════════════════════════════════════
+// MAIN COMPONENT
+// ═══════════════════════════════════════════════════════════════
 const ClinicalHistory = () => {
     const { id } = useParams();
     const navigate = useNavigate();
+
+    // If no patient ID in the URL → show selection screen
+    if (!id) {
+        return <PatientSelectionScreen navigate={navigate} />;
+    }
+
+    // Otherwise → show the clinical history for that patient
+    return <PatientClinicalView patientId={id} navigate={navigate} />;
+};
+
+
+// ═══════════════════════════════════════════════════════════════
+// PATIENT SELECTION SCREEN (when no ID)
+// ═══════════════════════════════════════════════════════════════
+const PatientSelectionScreen = ({ navigate }) => {
+    const [searchTerm, setSearchTerm] = useState('');
+    const [patients, setPatients] = useState([]);
+    const [filteredPatients, setFilteredPatients] = useState([]);
+    const [loading, setLoading] = useState(true);
+    const [error, setError] = useState(null);
+
+    // Fetch all patients on mount
+    useEffect(() => {
+        const fetchPatients = async () => {
+            setLoading(true);
+            try {
+                const data = await patientsAPI.list();
+                setPatients(data);
+                setFilteredPatients(data);
+            } catch (err) {
+                console.error('Error fetching patients:', err);
+                setError(typeof err === 'object' ? (err.message || 'Error al cargar pacientes') : String(err));
+                if (err.status === 401) navigate('/login');
+            } finally {
+                setLoading(false);
+            }
+        };
+        fetchPatients();
+    }, [navigate]);
+
+    // Filter patients by search term
+    useEffect(() => {
+        if (!searchTerm.trim()) {
+            setFilteredPatients(patients);
+            return;
+        }
+        const q = searchTerm.toLowerCase();
+        setFilteredPatients(
+            patients.filter(p =>
+                `${p.first_name} ${p.last_name}`.toLowerCase().includes(q) ||
+                p.document_id?.toLowerCase().includes(q) ||
+                p.email?.toLowerCase().includes(q) ||
+                p.phone?.toLowerCase().includes(q)
+            )
+        );
+    }, [searchTerm, patients]);
+
+    return (
+        <div className="space-y-8 animate-in fade-in duration-300">
+            {/* Header */}
+            <div>
+                <h1 className="text-3xl font-serif font-bold text-gray-800">Historia Clínica</h1>
+                <p className="text-gray-500 mt-1">Seleccione un paciente para ver o editar su historia clínica</p>
+            </div>
+
+            {/* Selection Card */}
+            <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
+
+                {/* Info Banner */}
+                <div className="bg-gradient-to-r from-primary/5 to-emerald-50 px-8 py-6 border-b border-gray-100">
+                    <div className="flex items-center gap-4">
+                        <div className="h-14 w-14 rounded-2xl bg-primary/10 flex items-center justify-center">
+                            <Users className="text-primary" size={28} />
+                        </div>
+                        <div>
+                            <h2 className="text-lg font-bold text-gray-800 font-serif">Buscar Paciente</h2>
+                            <p className="text-sm text-gray-500">
+                                Busque por nombre, cédula, email o teléfono para acceder a la ficha clínica completa.
+                            </p>
+                        </div>
+                    </div>
+                </div>
+
+                {/* Search Input */}
+                <div className="px-8 py-5 border-b border-gray-100">
+                    <div className="relative max-w-xl">
+                        <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" size={20} />
+                        <input
+                            type="text"
+                            placeholder="Buscar paciente por nombre, cédula, email o teléfono..."
+                            value={searchTerm}
+                            onChange={(e) => setSearchTerm(e.target.value)}
+                            autoFocus
+                            className="w-full pl-12 pr-4 py-3 border border-gray-200 rounded-xl bg-gray-50 focus:bg-white focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none transition-all text-sm"
+                        />
+                    </div>
+                </div>
+
+                {/* Patient List */}
+                <div className="px-8 py-4">
+                    {loading ? (
+                        <div className="flex items-center justify-center py-16">
+                            <Loader2 className="animate-spin text-primary mr-3" size={24} />
+                            <span className="text-gray-500">Cargando pacientes...</span>
+                        </div>
+                    ) : error ? (
+                        <div className="text-center py-16">
+                            <AlertCircle className="mx-auto text-red-400 mb-3" size={40} />
+                            <p className="text-gray-600 font-medium">{error}</p>
+                        </div>
+                    ) : filteredPatients.length === 0 ? (
+                        <div className="text-center py-16">
+                            <Search className="mx-auto text-gray-300 mb-3" size={40} />
+                            <p className="text-gray-500 font-medium">
+                                {searchTerm
+                                    ? 'No se encontraron pacientes con ese criterio.'
+                                    : 'No hay pacientes registrados.'}
+                            </p>
+                            {!searchTerm && (
+                                <button
+                                    onClick={() => navigate('/pacientes')}
+                                    className="text-primary hover:underline mt-2 text-sm font-medium"
+                                >
+                                    Ir a registrar pacientes →
+                                </button>
+                            )}
+                        </div>
+                    ) : (
+                        <div className="space-y-2 max-h-[480px] overflow-y-auto">
+                            {filteredPatients.map(patient => (
+                                <button
+                                    key={patient.id}
+                                    onClick={() => navigate(`/historia/${patient.id}`)}
+                                    className="w-full text-left px-5 py-4 rounded-xl border border-transparent hover:border-primary/30 hover:bg-primary/5 transition-all duration-200 flex items-center gap-4 group"
+                                >
+                                    {/* Avatar */}
+                                    <div className="h-11 w-11 rounded-full bg-gray-100 group-hover:bg-primary/15 text-gray-500 group-hover:text-primary flex items-center justify-center font-bold text-sm shrink-0 transition-colors">
+                                        {patient.first_name?.[0]}{patient.last_name?.[0]}
+                                    </div>
+
+                                    {/* Info */}
+                                    <div className="flex-1 min-w-0">
+                                        <p className="font-semibold text-gray-800 group-hover:text-primary transition-colors">
+                                            {patient.first_name} {patient.last_name}
+                                        </p>
+                                        <p className="text-xs text-gray-400 truncate">
+                                            Cédula: {patient.document_id}
+                                            {patient.email ? ` · ${patient.email}` : ''}
+                                            {patient.phone ? ` · ${patient.phone}` : ''}
+                                        </p>
+                                    </div>
+
+                                    {/* Right side details */}
+                                    <div className="flex items-center gap-3 shrink-0">
+                                        {patient.gender && (
+                                            <span className="text-xs text-gray-400 capitalize hidden md:inline">
+                                                {patient.gender}
+                                            </span>
+                                        )}
+                                        {patient.date_of_birth && (
+                                            <span className="text-xs bg-gray-100 text-gray-500 px-2 py-1 rounded-lg">
+                                                {calculateAge(patient.date_of_birth)} años
+                                            </span>
+                                        )}
+                                        {Number(patient.debt || 0) > 0 && (
+                                            <span className="text-xs bg-red-50 text-red-600 font-semibold px-2 py-1 rounded-lg">
+                                                ${Number(patient.debt).toFixed(2)}
+                                            </span>
+                                        )}
+                                        <ArrowLeft className="text-gray-300 group-hover:text-primary rotate-180 transition-colors" size={16} />
+                                    </div>
+                                </button>
+                            ))}
+                        </div>
+                    )}
+                </div>
+
+                {/* Footer count */}
+                {!loading && !error && (
+                    <div className="px-8 py-3 bg-gray-50 border-t border-gray-100">
+                        <p className="text-xs text-gray-400">
+                            {filteredPatients.length} de {patients.length} paciente{patients.length !== 1 ? 's' : ''}
+                        </p>
+                    </div>
+                )}
+            </div>
+        </div>
+    );
+};
+
+
+// ═══════════════════════════════════════════════════════════════
+// PATIENT CLINICAL VIEW (when ID is present)
+// ═══════════════════════════════════════════════════════════════
+const PatientClinicalView = ({ patientId, navigate }) => {
     const [isEditing, setIsEditing] = useState(false);
     const [activeTab, setActiveTab] = useState('datos');
     const [showToast, setShowToast] = useState(false);
@@ -41,7 +241,7 @@ const ClinicalHistory = () => {
         setLoading(true);
         setError(null);
         try {
-            const data = await patientsAPI.getById(id);
+            const data = await patientsAPI.getById(patientId);
             const mapped = {
                 id: data.id,
                 firstName: data.first_name || '',
@@ -60,24 +260,27 @@ const ClinicalHistory = () => {
 
             // Fetch clinical history
             try {
-                const historyList = await patientsAPI.getHistory(id);
+                const historyList = await patientsAPI.getHistory(patientId);
                 if (historyList && historyList.length > 0) {
-                    setClinicalData(historyList[0]);
-                    clinicalForm.reset(historyList[0]);
+                    const raw = historyList[0];
+                    setClinicalData(raw);
+                    // Strip server-only fields before loading into form
+                    const { id: _id, patient_id: _pid, created_at: _ca, updated_at: _ua, created_by: _cb, ...formFields } = raw;
+                    clinicalForm.reset(formFields);
                 }
             } catch (e) {
-                // No clinical history yet — fine
                 console.log('No clinical history found:', e.message);
             }
         } catch (err) {
             console.error('Error fetching patient:', err);
-            setError(err.message || 'Error al cargar paciente');
+            const msg = typeof err === 'object' ? (err.message || 'Error al cargar paciente') : String(err);
+            setError(msg);
             if (err.status === 401) navigate('/login');
             if (err.status === 404) setError('Paciente no encontrado.');
         } finally {
             setLoading(false);
         }
-    }, [id, patientForm, clinicalForm, navigate]);
+    }, [patientId, patientForm, clinicalForm, navigate]);
 
     useEffect(() => {
         fetchData();
@@ -97,12 +300,14 @@ const ClinicalHistory = () => {
                 gender: data.gender || null,
                 date_of_birth: data.birthDate || null,
             };
-            await patientsAPI.update(id, apiData);
+            await patientsAPI.update(patientId, apiData);
+            setIsEditing(false);
             setShowToast(true);
             setTimeout(() => setShowToast(false), 3000);
             await fetchData();
         } catch (err) {
-            setError(err.message || 'Error al guardar datos personales');
+            const msg = typeof err === 'object' ? (err.message || 'Error al guardar') : String(err);
+            setError(msg);
         } finally {
             setSaving(false);
         }
@@ -112,12 +317,16 @@ const ClinicalHistory = () => {
     const onSaveClinical = async (data) => {
         setSaving(true);
         try {
-            await patientsAPI.upsertHistory(id, data);
+            // Strip server-only fields that shouldn't be sent back
+            const { id: _id, patient_id: _pid, created_at: _ca, updated_at: _ua, created_by: _cb, ...cleanData } = data;
+            await patientsAPI.upsertHistory(patientId, cleanData);
+            setIsEditing(false);
             setShowToast(true);
             setTimeout(() => setShowToast(false), 3000);
             await fetchData();
         } catch (err) {
-            setError(err.message || 'Error al guardar historia clínica');
+            const msg = typeof err === 'object' ? (err.message || 'Error al guardar historia clínica') : String(err);
+            setError(msg);
         } finally {
             setSaving(false);
         }
@@ -158,8 +367,8 @@ const ClinicalHistory = () => {
             <div className="text-center py-24">
                 <AlertCircle className="mx-auto text-red-400 mb-4" size={48} />
                 <h2 className="text-xl font-bold text-gray-700 mb-2">{error}</h2>
-                <button onClick={() => navigate('/pacientes')} className="text-primary hover:underline mt-2">
-                    ← Volver a Pacientes
+                <button onClick={() => navigate('/historia')} className="text-primary hover:underline mt-2">
+                    ← Seleccionar otro paciente
                 </button>
             </div>
         );
@@ -174,6 +383,14 @@ const ClinicalHistory = () => {
             <div>
                 <div className="flex flex-col md:flex-row md:items-start justify-between gap-4">
                     <div>
+                        {/* Back button */}
+                        <button
+                            onClick={() => navigate('/historia')}
+                            className="text-sm text-gray-400 hover:text-primary flex items-center gap-1 mb-2 transition-colors"
+                        >
+                            <ArrowLeft size={14} /> Volver a selección de paciente
+                        </button>
+
                         <h1 className="text-3xl font-serif font-bold text-gray-800">Historia Clínica</h1>
                         <div className="flex items-center gap-3 mt-2">
                             <div className="h-10 w-10 rounded-full bg-primary/10 text-primary flex items-center justify-center font-bold text-sm font-serif">
@@ -295,10 +512,10 @@ const ClinicalHistory = () => {
                     {/* ── Section: Odontogram ─── */}
                     {activeTab === 'odontograma' && (
                         <div className="animate-in fade-in duration-200">
-                            <Odontogram patientId={id} readOnly={!isEditing} />
+                            <Odontogram patientId={patientId} readOnly={!isEditing} />
                             <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-8 mt-6">
                                 <h3 className="text-lg font-serif font-bold text-gray-800 mb-4">Galería de Imágenes</h3>
-                                <OrthodonticGallery patientId={id} />
+                                <OrthodonticGallery patientId={patientId} />
                             </div>
                         </div>
                     )}
@@ -409,7 +626,10 @@ const ClinicalHistory = () => {
     );
 };
 
-// ── Reusable Components ───────────────────────────────────────
+
+// ═══════════════════════════════════════════════════════════════
+// REUSABLE COMPONENTS
+// ═══════════════════════════════════════════════════════════════
 const InputGroup = ({ label, name, type = "text", register, errors, disabled, required, className }) => (
     <div className={className}>
         <label className="block text-sm font-bold text-gray-700 mb-2 font-serif">{label}</label>

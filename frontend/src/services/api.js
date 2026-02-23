@@ -19,7 +19,16 @@ function authHeaders() {
 async function handleResponse(res) {
     if (!res.ok) {
         const body = await res.json().catch(() => ({ detail: "Error desconocido" }));
-        const error = new Error(body.detail || `Error ${res.status}`);
+        // Pydantic returns detail as array of objects for validation errors
+        let message = `Error ${res.status}`;
+        if (typeof body.detail === 'string') {
+            message = body.detail;
+        } else if (Array.isArray(body.detail)) {
+            message = body.detail.map(e => `${(e.loc || []).slice(-1).join('.')}: ${e.msg}`).join('; ');
+        } else if (body.detail && typeof body.detail === 'object') {
+            message = JSON.stringify(body.detail);
+        }
+        const error = new Error(message);
         error.status = res.status;
         throw error;
     }
