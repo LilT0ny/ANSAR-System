@@ -36,6 +36,7 @@ const TREATMENT_TYPES = [
 // ── Component ─────────────────────────────────────────────────
 const Appointments = () => {
     const [selectedDate, setSelectedDate] = useState(new Date());
+    const [viewMode, setViewMode] = useState('week'); // 'day' | 'week'
     const [currentTime, setCurrentTime] = useState(new Date());
     const [showCreateModal, setShowCreateModal] = useState(false);
     const [showToast, setShowToast] = useState(false);
@@ -176,7 +177,9 @@ const Appointments = () => {
     // Week days
     const weekStart = startOfWeek(selectedDate, { weekStartsOn: 1 }); // Monday start
     const weekEnd = endOfWeek(selectedDate, { weekStartsOn: 1 });
-    const weekDays = eachDayOfInterval({ start: weekStart, end: weekEnd });
+    const weekDays = viewMode === 'week'
+        ? eachDayOfInterval({ start: weekStart, end: weekEnd })
+        : [selectedDate];
 
     // ── Status styles (using system green) ────────────────────
     // ── Status styles (using system green) ────────────────────
@@ -668,7 +671,7 @@ const Appointments = () => {
                 </aside>
 
                 {/* ── RIGHT: Weekly Calendar Grid ─────────────────── */}
-                <div className="flex-1 bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden flex flex-col" style={{ minHeight: '70vh' }}>
+                <div className="flex-1 bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden flex flex-col h-[calc(100vh-140px)] max-h-[850px]">
 
                     {/* Calendar Toolbar */}
                     <div className="px-6 py-3 border-b border-gray-100 flex items-center justify-between shrink-0 bg-white">
@@ -683,26 +686,55 @@ const Appointments = () => {
                             <div className="flex items-center gap-1">
                                 <button
                                     type="button"
-                                    onClick={() => setSelectedDate(subWeeks(selectedDate, 1))}
+                                    onClick={() => {
+                                        if (viewMode === 'week') setSelectedDate(subWeeks(selectedDate, 1));
+                                        else setSelectedDate(new Date(selectedDate.setDate(selectedDate.getDate() - 1)));
+                                    }}
                                     className="p-2 hover:bg-gray-100 rounded-xl text-gray-500 transition-colors"
                                 >
                                     <ChevronLeft size={18} />
                                 </button>
                                 <button
                                     type="button"
-                                    onClick={() => setSelectedDate(addWeeks(selectedDate, 1))}
+                                    onClick={() => {
+                                        if (viewMode === 'week') setSelectedDate(addWeeks(selectedDate, 1));
+                                        else setSelectedDate(new Date(selectedDate.setDate(selectedDate.getDate() + 1)));
+                                    }}
                                     className="p-2 hover:bg-gray-100 rounded-xl text-gray-500 transition-colors"
                                 >
                                     <ChevronRight size={18} />
                                 </button>
                             </div>
-                            <h2 className="text-lg font-serif font-bold text-gray-800 capitalize">
-                                {format(selectedDate, "MMMM yyyy", { locale: es })}
+                            <h2 className="text-lg font-serif font-bold text-gray-800 capitalize min-w-[140px]">
+                                {viewMode === 'week'
+                                    ? format(selectedDate, "MMMM yyyy", { locale: es })
+                                    : format(selectedDate, "d 'de' MMMM", { locale: es })
+                                }
                             </h2>
                         </div>
-                        <span className="text-xs font-semibold text-gray-400 bg-gray-50 px-3 py-1 rounded-full">
-                            Vista Semanal
-                        </span>
+
+                        <div className="flex items-center bg-gray-100 p-1 rounded-xl">
+                            <button
+                                type="button"
+                                onClick={() => setViewMode('day')}
+                                className={clsx(
+                                    "px-4 py-1.5 rounded-lg text-xs font-bold transition-all",
+                                    viewMode === 'day' ? "bg-white text-primary shadow-sm" : "text-gray-500 hover:text-gray-700"
+                                )}
+                            >
+                                Día
+                            </button>
+                            <button
+                                type="button"
+                                onClick={() => setViewMode('week')}
+                                className={clsx(
+                                    "px-4 py-1.5 rounded-lg text-xs font-bold transition-all",
+                                    viewMode === 'week' ? "bg-white text-primary shadow-sm" : "text-gray-500 hover:text-gray-700"
+                                )}
+                            >
+                                Semana
+                            </button>
+                        </div>
                     </div>
 
                     {/* Days Header Row */}
