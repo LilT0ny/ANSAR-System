@@ -3,6 +3,8 @@ from functools import lru_cache
 
 class Settings(BaseAppSettings):
     # Auth Service Specific Config
+    NOTIFICATIONS_SERVICE_URL: str = "http://notifications-service:8004"
+
     class Config:
         env_file = ".env"
 

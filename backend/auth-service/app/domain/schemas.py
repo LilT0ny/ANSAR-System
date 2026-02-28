@@ -30,11 +30,17 @@ class UserResponse(BaseModel):
         from_attributes = True
 
 
+class OTPRequest(BaseModel):
+    email: EmailStr
+
+class OTPVerifyRequest(BaseModel):
+    email: EmailStr
+    code: str = Field(..., min_length=6, max_length=6)
+
 class AuthResponse(BaseModel):
     status: str = "success"
     token: str
     data: dict
-
 
 class MessageResponse(BaseModel):
     status: str

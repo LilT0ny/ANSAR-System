@@ -225,6 +225,11 @@ export const appointmentsAPI = {
         return handleResponse(res);
     },
 
+    getGeneralAvailability: async (date) => {
+        const res = await fetch(`${API_URL}/public/general-availability?date=${date}`);
+        return handleResponse(res);
+    },
+
     getOrthoDates: async () => {
         const res = await fetch(`${API_URL}/public/ortho-dates`);
         return handleResponse(res);
@@ -232,6 +237,15 @@ export const appointmentsAPI = {
 
     publicBookOrtho: async (data) => {
         const res = await fetch(`${API_URL}/public/book-ortho`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(data),
+        });
+        return handleResponse(res);
+    },
+
+    publicBookGeneral: async (data) => {
+        const res = await fetch(`${API_URL}/public/book-general`, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify(data),
@@ -254,6 +268,29 @@ export const notificationsAPI = {
             method: "POST",
             headers: authHeaders(),
             body: JSON.stringify(data),
+        });
+        return handleResponse(res);
+    },
+
+    getDoctorNotifications: async () => {
+        const res = await fetch(`${API_URL}/notifications/doctor-notifications`, {
+            headers: authHeaders(),
+        });
+        return handleResponse(res);
+    },
+
+    markAsRead: async (logId) => {
+        const res = await fetch(`${API_URL}/notifications/doctor-notifications/${logId}/read`, {
+            method: "PUT",
+            headers: authHeaders(),
+        });
+        return handleResponse(res);
+    },
+
+    clearDoctorNotifications: async () => {
+        const res = await fetch(`${API_URL}/notifications/doctor-notifications/clear`, {
+            method: "DELETE",
+            headers: authHeaders(),
         });
         return handleResponse(res);
     },

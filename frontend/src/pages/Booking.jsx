@@ -1,10 +1,11 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { DayPicker } from 'react-day-picker';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { CheckCircle, Calendar, Clock, User, ChevronRight, ChevronLeft, CalendarCheck } from 'lucide-react';
 import { clsx } from 'clsx';
 import 'react-day-picker/style.css';
+import { appointmentsAPI } from '../services/api';
 
 const services = [
     { id: 1, name: 'Consulta General', price: '$50', duration: '30 min', color: 'bg-blue-100 text-blue-700 border-blue-200' },
@@ -13,11 +14,8 @@ const services = [
     { id: 4, name: 'Ortodoncia', price: '$100', duration: '30 min', color: 'bg-orange-100 text-orange-700 border-orange-200' },
 ];
 
-const timeSlots = [
-    '08:00', '08:30', '09:00', '09:30', '10:00', '10:30',
-    '11:00', '11:30', '14:00', '14:30', '15:00', '15:30',
-    '16:00', '16:30', '17:00', '17:30'
-];
+// We leave this as a fallback generator or remove it entirely.
+// Time slots are now fetched dynamically from the server.
 
 const Booking = () => {
     const [step, setStep] = useState(1);
@@ -27,17 +25,55 @@ const Booking = () => {
     const [formData, setFormData] = useState({ name: '', email: '', phone: '', reason: '' });
     const [isSubmitting, setIsSubmitting] = useState(false);
 
+    const [availableTimes, setAvailableTimes] = useState([]);
+    const [loadingTimes, setLoadingTimes] = useState(false);
+
+    useEffect(() => {
+        if (selectedDate) {
+            setLoadingTimes(true);
+            const fetchAvailability = async () => {
+                try {
+                    const dateStr = format(selectedDate, 'yyyy-MM-dd');
+                    const res = await appointmentsAPI.getGeneralAvailability(dateStr);
+                    setAvailableTimes(res.available || []);
+                } catch (err) {
+                    console.error("Error fetching available times", err);
+                    setAvailableTimes([]);
+                } finally {
+                    setLoadingTimes(false);
+                }
+            };
+            fetchAvailability();
+            setSelectedTime(null);
+        }
+    }, [selectedDate]);
+
     const handleNext = () => setStep(s => s + 1);
     const handleBack = () => setStep(s => s - 1);
 
     const handleSubmit = async (e) => {
         e.preventDefault();
         setIsSubmitting(true);
-        // Simulate API call and Google Calendar Integration (UH 3)
-        setTimeout(() => {
-            setIsSubmitting(false);
+        try {
+            const appointmentData = {
+                full_name: formData.name,
+                email: formData.email,
+                phone: formData.phone,
+                date: format(selectedDate, 'yyyy-MM-dd'),
+                time: selectedTime,
+                service: selectedService?.name,
+                reason: formData.reason
+            };
+
+            // Call real API Endpoint
+            await appointmentsAPI.publicBookGeneral(appointmentData);
             setStep(4);
-        }, 2000);
+        } catch (error) {
+            console.error("Error booking appointment", error);
+            alert("Hubo un error al agendar la cita. Por favor, intenta de nuevo.");
+        } finally {
+            setIsSubmitting(false);
+        }
     };
 
     return (
@@ -153,22 +189,30 @@ const Booking = () => {
                                 <div className="flex-1 min-w-0">
                                     <p className="font-medium text-gray-700 mb-3">Horarios Disponibles</p>
                                     <div className="grid grid-cols-2 gap-2 max-h-[300px] overflow-y-auto pr-1 custom-scrollbar">
-                                        {timeSlots.map((time) => (
-                                            <button
-                                                key={time}
-                                                onClick={() => setSelectedTime(time)}
-                                                disabled={!selectedDate}
-                                                className={clsx(
-                                                    "py-2.5 px-3 rounded-xl text-sm font-semibold transition-all border text-center whitespace-nowrap",
-                                                    selectedTime === time
-                                                        ? "bg-primary text-white border-primary shadow-md transform scale-105"
-                                                        : "bg-white text-gray-600 border-gray-200 hover:border-primary/50 hover:bg-gray-50",
-                                                    !selectedDate && "opacity-50 cursor-not-allowed"
-                                                )}
-                                            >
-                                                {time}
-                                            </button>
-                                        ))}
+                                        {loadingTimes ? (
+                                            <p className="text-sm text-gray-500 col-span-2 py-4">Cargando horarios...</p>
+                                        ) : availableTimes.length === 0 && selectedDate ? (
+                                            <p className="text-sm text-gray-500 col-span-2 py-4 border border-dashed rounded-lg bg-gray-50 flex items-center justify-center">
+                                                No hay horarios disponibles para este día.
+                                            </p>
+                                        ) : (
+                                            availableTimes.map((time) => (
+                                                <button
+                                                    key={time}
+                                                    onClick={() => setSelectedTime(time)}
+                                                    disabled={!selectedDate}
+                                                    className={clsx(
+                                                        "py-2.5 px-3 rounded-xl text-sm font-semibold transition-all border text-center whitespace-nowrap",
+                                                        selectedTime === time
+                                                            ? "bg-primary text-white border-primary shadow-md transform scale-105"
+                                                            : "bg-white text-gray-600 border-gray-200 hover:border-primary/50 hover:bg-gray-50",
+                                                        !selectedDate && "opacity-50 cursor-not-allowed"
+                                                    )}
+                                                >
+                                                    {time}
+                                                </button>
+                                            ))
+                                        )}
                                     </div>
                                     {!selectedDate && <p className="text-xs text-red-400 mt-2">Por favor selecciona una fecha primero.</p>}
                                 </div>
@@ -244,9 +288,9 @@ const Booking = () => {
                                         className="w-full bg-primary text-white py-4 rounded-xl font-bold shadow-lg shadow-primary/30 hover:shadow-xl hover:bg-green-600 disabled:opacity-70 transition-all flex justify-center items-center gap-2"
                                     >
                                         {isSubmitting ? (
-                                            <span className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                                            <span className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin uppercase" />
                                         ) : (
-                                            <>Confirmar HORA <CalendarCheck size={20} /></>
+                                            <>Confirmar Cita <CalendarCheck size={20} /></>
                                         )}
                                     </button>
                                     <p className="text-xs text-center text-gray-400 mt-4">

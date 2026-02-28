@@ -77,6 +77,11 @@ async def get_availability(date: str = Query(...), db: AsyncSession = Depends(ge
     return await service.get_availability(db, date)
 
 
+@public_router.get("/general-availability", response_model=AvailabilityResponse)
+async def get_general_availability(date: str = Query(...), db: AsyncSession = Depends(get_db)):
+    return await service.get_general_availability(db, date)
+
+
 @public_router.get("/ortho-dates")
 async def get_ortho_dates(db: AsyncSession = Depends(get_db)):
     dates = await service.get_ortho_dates(db)
@@ -86,3 +91,8 @@ async def get_ortho_dates(db: AsyncSession = Depends(get_db)):
 @public_router.post("/book-ortho")
 async def public_book_ortho(body: PublicBookingRequest, db: AsyncSession = Depends(get_db)):
     return await service.public_booking(db, body.model_dump())
+
+
+@public_router.post("/book-general")
+async def public_book_general(body: PublicBookingRequest, db: AsyncSession = Depends(get_db)):
+    return await service.public_booking_general(db, body.model_dump())

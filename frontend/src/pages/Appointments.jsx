@@ -14,7 +14,7 @@ import { es } from 'date-fns/locale';
 import { DayPicker } from 'react-day-picker';
 import 'react-day-picker/style.css';
 import { clsx } from 'clsx';
-import { patientsAPI, appointmentsAPI, notificationsAPI } from '../services/api';
+import { patientsAPI, appointmentsAPI } from '../services/api';
 
 // ── Treatment Types ───────────────────────────────────────────
 const TREATMENT_TYPES = [
@@ -121,8 +121,12 @@ const Appointments = () => {
 
             // Map API appointments to frontend format
             const mappedAppts = appts.map(a => {
-                const startDate = parseISO(a.start_time);
-                const endDate = parseISO(a.end_time);
+                // Remove Z suffix to prevent local timezone translation
+                const cleanedStartTime = a.start_time.replace(/([+-]\d{2}:\d{2}|Z)$/i, '');
+                const cleanedEndTime = a.end_time.replace(/([+-]\d{2}:\d{2}|Z)$/i, '');
+                const startDate = typeof cleanedStartTime === 'string' ? new Date(cleanedStartTime) : new Date();
+                const endDate = typeof cleanedEndTime === 'string' ? new Date(cleanedEndTime) : new Date();
+
                 return {
                     id: a.id,
                     title: a.reason || 'Cita',
@@ -157,12 +161,17 @@ const Appointments = () => {
 
     useEffect(() => {
         fetchData();
+        // Option to poll for new appointments
+        const interval = setInterval(() => {
+            fetchData();
+        }, 30000); // 30 sec polling
+        return () => clearInterval(interval);
     }, [fetchData]);
 
     const START_HOUR = 8;
-    const END_HOUR = 19; // 9 PM — full day
-    const HOUR_HEIGHT = 64; // px per hour
-    const TIME_SLOTS = Array.from({ length: END_HOUR - START_HOUR }, (_, i) => i + START_HOUR);
+    const END_HOUR = 19; // 7 PM
+    const HOUR_HEIGHT = 120; // Increased from 60 to feel spacious like GCal
+    const TIME_SLOTS = Array.from({ length: END_HOUR - START_HOUR + 1 }, (_, i) => i + START_HOUR);
 
     // Week days
     const weekStart = startOfWeek(selectedDate, { weekStartsOn: 1 }); // Monday start
@@ -211,7 +220,7 @@ const Appointments = () => {
         const durationMinutes = (endH * 60 + endM) - (startH * 60 + startM);
         return {
             top: `${(startMinutes / 60) * HOUR_HEIGHT}px`,
-            height: `${Math.max((durationMinutes / 60) * HOUR_HEIGHT, 28)}px`,
+            height: `${Math.max((durationMinutes / 60) * HOUR_HEIGHT, 48)}px`,
         };
     };
 
@@ -742,10 +751,10 @@ const Appointments = () => {
                         <div className="relative" style={{ height: `${TIME_SLOTS.length * HOUR_HEIGHT}px` }}>
                             {/* Time axis + grid lines */}
                             <div className="absolute inset-0 flex">
-                                <div className="w-16 border-r border-gray-100 shrink-0 bg-white z-10 select-none">
+                                <div className="w-20 border-r border-gray-200 shrink-0 bg-white z-10 select-none">
                                     {TIME_SLOTS.map(hour => (
-                                        <div key={hour} className="h-16 flex items-start justify-end pr-3 -mt-2">
-                                            <span className="text-[11px] font-semibold text-gray-400 tabular-nums">
+                                        <div key={hour} className="flex items-start justify-end pr-3 -mt-3" style={{ height: `${HOUR_HEIGHT}px` }}>
+                                            <span className="text-xs font-bold text-gray-500 tabular-nums">
                                                 {String(hour).padStart(2, '0')}:00
                                             </span>
                                         </div>
@@ -767,8 +776,8 @@ const Appointments = () => {
                                                 );
                                             })}
                                             {TIME_SLOTS.map(hour => (
-                                                <div key={hour} className="h-16 border-b border-gray-50 relative">
-                                                    <div className="absolute top-1/2 left-0 right-0 border-t border-dashed border-gray-100/80"></div>
+                                                <div key={hour} className="border-b border-gray-200 relative" style={{ height: `${HOUR_HEIGHT}px` }}>
+                                                    <div className="absolute top-1/2 left-0 right-0 border-t border-dashed border-gray-200"></div>
                                                 </div>
                                             ))}
                                         </div>
@@ -777,7 +786,7 @@ const Appointments = () => {
                             </div>
 
                             {/* Events Overlay */}
-                            <div className="absolute inset-0 flex ml-16">
+                            <div className="absolute inset-0 flex ml-20">
                                 {weekDays.map((day, dayIndex) => {
                                     const dayAppointments = appointments.filter(appt => isSameDay(parseISO(appt.date), day));
                                     return (
@@ -797,7 +806,7 @@ const Appointments = () => {
                                                 <div
                                                     key={appt.id}
                                                     className={clsx(
-                                                        "absolute left-1 right-1.5 rounded-xl p-2 text-xs cursor-pointer transition-all hover:shadow-lg hover:z-20 group overflow-hidden",
+                                                        "absolute left-1 right-1.5 rounded-xl p-2 cursor-pointer transition-all hover:shadow-lg hover:z-20 group flex flex-col gap-0.5",
                                                         isOrthoAppointment(appt)
                                                             ? "border-l-4"
                                                             : getStatusStyles(appt.status)
@@ -811,12 +820,12 @@ const Appointments = () => {
                                                         } : {}),
                                                     }}
                                                 >
-                                                    <div className="font-bold truncate leading-tight">{appt.type}</div>
-                                                    <div className="truncate text-[10px] opacity-80 mt-0.5">
+                                                    <div className="font-bold truncate leading-tight text-xs sm:text-sm">{appt.type || appt.title}</div>
+                                                    <div className="truncate text-[11px] sm:text-xs font-semibold opacity-85">
                                                         {appt.start} – {appt.end}
                                                     </div>
-                                                    <div className="mt-0.5 font-medium truncate text-[10px] opacity-90">
-                                                        {appt.patient}
+                                                    <div className="font-bold truncate text-[11px] sm:text-xs opacity-95">
+                                                        {appt.patientName || appt.patient}
                                                     </div>
 
                                                     {/* Hover actions */}

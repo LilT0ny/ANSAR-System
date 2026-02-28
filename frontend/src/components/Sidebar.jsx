@@ -3,20 +3,32 @@ import { NavLink, useNavigate } from 'react-router-dom';
 import { Home, User, Calendar, FileText, Settings, LogOut, TrendingUp, Receipt, BarChart3, Bell, X } from 'lucide-react';
 import clsx from 'clsx';
 
-// Mock notifications data for patient reservations
-const mockNotifications = [
-    { id: 1, patient: 'Maria Garcia', type: 'Limpieza', date: 'Hoy, 10:00 AM', status: 'Confirmada', read: false },
-    { id: 2, patient: 'Juan Lopez', type: 'Consulta', date: 'Hoy, 11:30 AM', status: 'Pendiente', read: false },
-    { id: 3, patient: 'Ana Martinez', type: 'Ortodoncia', date: 'Hoy, 03:00 PM', status: 'En Sala', read: false },
-    { id: 4, patient: 'Carlos Ruiz', type: 'Blanqueamiento', date: 'Mañana, 09:00 AM', status: 'Confirmada', read: true },
-    { id: 5, patient: 'Laura Fernández', type: 'Implantes', date: 'Mañana, 11:00 AM', status: 'Pendiente', read: true },
-];
+import { notificationsAPI } from '../services/api';
 
 const Sidebar = () => {
     const navigate = useNavigate();
     const [showNotifications, setShowNotifications] = useState(false);
-    const [notifications, setNotifications] = useState(mockNotifications);
+    const [notifications, setNotifications] = useState([]);
     const notifRef = useRef(null);
+
+    // Polling original
+    useEffect(() => {
+        const fetchNotifications = async () => {
+            try {
+                const notifs = await notificationsAPI.getDoctorNotifications();
+                if (Array.isArray(notifs)) {
+                    // Map backend is_read to local read state
+                    setNotifications(notifs.map(n => ({ ...n, read: n.is_read })));
+                }
+            } catch (err) {
+                console.error("Error fetching notifications via Sidebar:", err);
+            }
+        };
+
+        fetchNotifications();
+        const interval = setInterval(fetchNotifications, 30000); // 30 sec polling
+        return () => clearInterval(interval);
+    }, []);
 
     const unreadCount = notifications.filter(n => !n.read).length;
 
@@ -31,12 +43,22 @@ const Sidebar = () => {
         return () => document.removeEventListener('mousedown', handleClickOutside);
     }, []);
 
-    const markAsRead = (id) => {
-        setNotifications(prev => prev.map(n => n.id === id ? { ...n, read: true } : n));
+    const markAsRead = async (id) => {
+        try {
+            await notificationsAPI.markAsRead(id);
+            setNotifications(prev => prev.map(n => n.id === id ? { ...n, read: true } : n));
+        } catch (err) {
+            console.error("Error marking notification as read:", err);
+        }
     };
 
-    const markAllAsRead = () => {
-        setNotifications(prev => prev.map(n => ({ ...n, read: true })));
+    const clearAllNotifications = async () => {
+        try {
+            await notificationsAPI.clearDoctorNotifications();
+            setNotifications([]);
+        } catch (err) {
+            console.error("Error clearing notifications:", err);
+        }
     };
 
     const getStatusStyle = (status) => {
@@ -122,12 +144,12 @@ const Sidebar = () => {
                                     <p className="text-xs text-gray-500 mt-0.5">Reservas de pacientes</p>
                                 </div>
                                 <div className="flex items-center gap-2">
-                                    {unreadCount > 0 && (
+                                    {notifications.length > 0 && (
                                         <button
-                                            onClick={markAllAsRead}
-                                            className="text-xs text-primary hover:underline font-medium"
+                                            onClick={clearAllNotifications}
+                                            className="text-xs text-red-500 hover:text-red-700 hover:underline font-medium"
                                         >
-                                            Marcar todo leído
+                                            Limpiar todas
                                         </button>
                                     )}
                                     <button
@@ -146,36 +168,46 @@ const Sidebar = () => {
                                         No hay notificaciones
                                     </div>
                                 ) : (
-                                    notifications.map((notif) => (
-                                        <div
-                                            key={notif.id}
-                                            onClick={() => markAsRead(notif.id)}
-                                            className={clsx(
-                                                'flex items-start gap-3 px-5 py-3.5 cursor-pointer transition-colors border-b border-gray-50 last:border-b-0',
-                                                !notif.read ? 'bg-primary/5 hover:bg-primary/10' : 'hover:bg-gray-50'
-                                            )}
-                                        >
-                                            {/* Patient avatar */}
-                                            <div className="h-9 w-9 rounded-full bg-primary/10 text-primary flex items-center justify-center font-bold text-xs flex-shrink-0 mt-0.5">
-                                                {notif.patient.split(' ').map(n => n[0]).join('')}
-                                            </div>
-                                            <div className="flex-1 min-w-0">
-                                                <div className="flex items-center justify-between gap-2">
-                                                    <p className={clsx('text-sm truncate', !notif.read ? 'font-bold text-gray-800' : 'font-medium text-gray-600')}>
-                                                        {notif.patient}
-                                                    </p>
-                                                    <span className={`text-[10px] px-2 py-0.5 rounded-full flex-shrink-0 ${getStatusStyle(notif.status)}`}>
-                                                        {notif.status}
-                                                    </span>
+                                    notifications.map((notif) => {
+                                        const d = new Date(notif.created_at + 'Z');
+                                        const timeAgo = Math.floor((new Date() - d) / 60000); // in minutes
+                                        let timeText = 'ahora';
+                                        if (timeAgo > 60) timeText = `hace ${Math.floor(timeAgo / 60)}h`;
+                                        else if (timeAgo > 0) timeText = `hace ${timeAgo}m`;
+
+                                        // Fallback extractions for older mock UI compatibility
+                                        const pName = notif.subject || 'Cita';
+                                        const shortName = pName.split(' ').map(n => n?.[0]).join('').substring(0, 2);
+
+                                        return (
+                                            <div
+                                                key={notif.id}
+                                                onClick={() => markAsRead(notif.id)}
+                                                className={clsx(
+                                                    'flex items-start gap-3 px-5 py-3.5 cursor-pointer transition-colors border-b border-gray-50 last:border-b-0',
+                                                    !notif.read ? 'bg-primary/5 hover:bg-primary/10' : 'hover:bg-gray-50'
+                                                )}
+                                            >
+                                                {/* Patient avatar */}
+                                                <div className="h-9 w-9 rounded-full bg-primary/10 text-primary flex items-center justify-center font-bold text-xs flex-shrink-0 mt-0.5">
+                                                    {shortName}
                                                 </div>
-                                                <p className="text-xs text-gray-500 mt-0.5">{notif.type} · {notif.date}</p>
+                                                <div className="flex-1 min-w-0">
+                                                    <div className="flex items-center justify-between gap-2">
+                                                        <p className={clsx('text-sm truncate', !notif.read ? 'font-bold text-gray-800' : 'font-medium text-gray-600')}>
+                                                            {pName}
+                                                        </p>
+                                                        <span className="text-[10px] text-gray-400 font-medium shrink-0">{timeText}</span>
+                                                    </div>
+                                                    <p className="text-xs text-gray-500 mt-0.5" dangerouslySetInnerHTML={{ __html: notif.message_content?.replace(/<[^>]*>?/gm, ' ') || '' }}></p>
+                                                </div>
+                                                {/* Unread dot */}
+                                                {!notif.read && (
+                                                    <div className="h-2 w-2 bg-primary rounded-full flex-shrink-0 mt-2"></div>
+                                                )}
                                             </div>
-                                            {/* Unread dot */}
-                                            {!notif.read && (
-                                                <div className="h-2 w-2 bg-primary rounded-full flex-shrink-0 mt-2"></div>
-                                            )}
-                                        </div>
-                                    ))
+                                        );
+                                    })
                                 )}
                             </div>
 

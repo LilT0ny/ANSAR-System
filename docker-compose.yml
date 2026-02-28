@@ -135,8 +135,12 @@ services:
       JWT_SECRET: ${JWT_SECRET}
       JWT_ALGORITHM: ${JWT_ALGORITHM}
       NOTIFICATIONS_SERVICE_URL: ${NOTIFICATIONS_SERVICE_URL}
+      GOOGLE_APPLICATION_CREDENTIALS: /app/config/credentials.json
+      GOOGLE_CALENDAR_ID: ${GOOGLE_CALENDAR_ID:-primary}
     ports:
       - "8003:8003"
+    volumes:
+      - ./backend/config:/app/config:ro
     depends_on:
       db-appointments:
         condition: service_healthy
@@ -161,6 +165,7 @@ services:
       SMTP_PASSWORD: ${SMTP_PASSWORD}
       SMTP_FROM_NAME: ${SMTP_FROM_NAME}
       SMTP_FROM_EMAIL: ${SMTP_FROM_EMAIL}
+      USE_CONSOLE_EMAIL: ${USE_CONSOLE_EMAIL}
     ports:
       - "8004:8004"
     depends_on:

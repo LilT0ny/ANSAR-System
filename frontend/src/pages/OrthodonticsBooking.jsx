@@ -6,38 +6,7 @@ import { es } from 'date-fns/locale';
 import { CheckCircle, Clock, Calendar, ChevronRight, AlertCircle, ShieldCheck } from 'lucide-react';
 import { clsx } from 'clsx';
 import 'react-day-picker/style.css';
-
-// ── Mock ortho blocks (would come from backend in production) ──
-// Now uses specific dates instead of recurring day-of-week
-const ORTHO_BLOCKS = [
-    { id: 1, date: '2026-02-23', startTime: '12:00', endTime: '17:00', label: 'Lun 23 Feb – Ortodoncia' },
-    { id: 2, date: '2026-02-25', startTime: '09:00', endTime: '12:00', label: 'Mié 25 Feb – Ortodoncia' },
-    { id: 3, date: '2026-03-02', startTime: '14:00', endTime: '18:00', label: 'Lun 2 Mar – Ortodoncia' },
-];
-
-// ── Mock booked slots (simulates already-taken appointments) ──
-const BOOKED_SLOTS = [
-    { date: '2026-02-19', time: '09:00' },
-    { date: '2026-02-19', time: '10:00' },
-    { date: '2026-02-26', time: '15:30' },
-];
-
-const SLOT_DURATION = 30; // minutes
-
-function generateTimeSlots(startTime, endTime) {
-    const slots = [];
-    const [sh, sm] = startTime.split(':').map(Number);
-    const [eh, em] = endTime.split(':').map(Number);
-    let current = sh * 60 + sm;
-    const end = eh * 60 + em;
-    while (current < end) {
-        const h = Math.floor(current / 60);
-        const m = current % 60;
-        slots.push(`${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`);
-        current += SLOT_DURATION;
-    }
-    return slots;
-}
+import { appointmentsAPI } from '../services/api';
 
 const OrthodonticsBooking = () => {
     const [searchParams] = useSearchParams();
@@ -51,8 +20,21 @@ const OrthodonticsBooking = () => {
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [slotTaken, setSlotTaken] = useState(false);
 
-    // Collect the specific dates that have ortho blocks
-    const orthoDates = ORTHO_BLOCKS.map(b => b.date);
+    // API State
+    const [orthoDates, setOrthoDates] = useState([]);
+
+    // Load dates with Ortho blocks on mount
+    useEffect(() => {
+        const fetchDates = async () => {
+            try {
+                const dates = await appointmentsAPI.getOrthoDates();
+                setOrthoDates(dates);
+            } catch (error) {
+                console.error("Failed to load ortho dates", error);
+            }
+        };
+        fetchDates();
+    }, []);
 
     // Disable days that don't have ortho blocks and past days
     const isDateDisabled = (date) => {
@@ -61,43 +43,49 @@ const OrthodonticsBooking = () => {
         return !orthoDates.includes(dateStr);
     };
 
-    // When a date is selected, generate available time slots
+    // When a date is selected, generate available time slots from real API
     useEffect(() => {
         if (!selectedDate) { setAvailableSlots([]); return; }
-        const dateStr = format(selectedDate, 'yyyy-MM-dd');
-        const blocks = ORTHO_BLOCKS.filter(b => b.date === dateStr);
-        let allSlots = [];
-        blocks.forEach(block => {
-            const slots = generateTimeSlots(block.startTime, block.endTime);
-            allSlots = [...allSlots, ...slots];
-        });
-        // Remove booked slots
-        const free = allSlots.filter(slot =>
-            !BOOKED_SLOTS.some(bs => bs.date === dateStr && bs.time === slot)
-        );
-        setAvailableSlots(free);
-        setSelectedTime(null);
-        setSlotTaken(false);
-    }, [selectedDate]);
 
-    // Simulate real-time availability check (CA 5)
-    const validateSlot = () => {
-        if (!selectedDate || !selectedTime) return false;
-        const dateStr = format(selectedDate, 'yyyy-MM-dd');
-        const taken = BOOKED_SLOTS.some(bs => bs.date === dateStr && bs.time === selectedTime);
-        if (taken) { setSlotTaken(true); return false; }
-        setSlotTaken(false);
-        return true;
-    };
+        const fetchAvailability = async () => {
+            const dateStr = format(selectedDate, 'yyyy-MM-dd');
+            try {
+                const data = await appointmentsAPI.getAvailability(dateStr);
+                setAvailableSlots(data.available || []);
+                setSelectedTime(null);
+                setSlotTaken(false);
+            } catch (error) {
+                console.error("Failed to fetch availability", error);
+                setAvailableSlots([]);
+            }
+        };
+
+        fetchAvailability();
+    }, [selectedDate]);
 
     const handleConfirm = async (e) => {
         e.preventDefault();
-        if (!validateSlot()) return;
         setIsSubmitting(true);
-        setTimeout(() => {
-            setIsSubmitting(false);
+        try {
+            const dateStr = format(selectedDate, 'yyyy-MM-dd');
+            await appointmentsAPI.publicBookOrtho({
+                date: dateStr,
+                time: selectedTime,
+                full_name: formData.name,
+                phone: formData.phone,
+                email: formData.email
+            });
             setStep(3);
-        }, 1800);
+        } catch (error) {
+            console.error(error);
+            if (error.response && error.response.status === 409) {
+                setSlotTaken(true);
+            } else {
+                alert("Hubo un error al reservar. Por favor intenta de nuevo.");
+            }
+        } finally {
+            setIsSubmitting(false);
+        }
     };
 
     return (
@@ -239,7 +227,7 @@ const OrthodonticsBooking = () => {
                             <div className="mt-8 flex justify-end">
                                 <button
                                     type="button"
-                                    onClick={() => { if (validateSlot()) setStep(2); }}
+                                    onClick={() => { if (selectedDate && selectedTime) setStep(2); }}
                                     disabled={!selectedDate || !selectedTime}
                                     className="bg-ortho text-white px-8 py-3 rounded-full font-bold shadow-lg shadow-ortho/20 hover:shadow-xl hover:bg-ortho/90 disabled:opacity-40 disabled:shadow-none transition-all flex items-center gap-2"
                                 >

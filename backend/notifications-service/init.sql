@@ -14,6 +14,8 @@ CREATE TABLE IF NOT EXISTS notification_logs (
     subject             VARCHAR(255),
     message_content     TEXT,
     error_detail        TEXT,
+    is_read             BOOLEAN         DEFAULT FALSE,
+    is_deleted          BOOLEAN         DEFAULT FALSE,
     created_at          TIMESTAMPTZ     NOT NULL DEFAULT NOW()
 );
 

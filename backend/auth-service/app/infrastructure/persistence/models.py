@@ -18,3 +18,13 @@ class User(Base):
     __table_args__ = (
         CheckConstraint("role IN ('admin', 'doctor')", name="valid_roles"),
     )
+
+class LoginOTP(Base):
+    __tablename__ = "login_otps"
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    email = Column(String(255), nullable=False, index=True)
+    otp_code = Column(String(6), nullable=False)
+    expires_at = Column(DateTime(timezone=True), nullable=False)
+    used = Column(Boolean, default=False)
+    created_at = Column(DateTime(timezone=True), server_default=func.now())

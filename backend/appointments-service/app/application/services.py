@@ -3,9 +3,11 @@ from sqlalchemy import select, and_, or_
 from sqlalchemy.ext.asyncio import AsyncSession
 from fastapi import HTTPException
 import httpx
+import asyncio
 
 from app.infrastructure.persistence.models import Appointment, OrthoBlock
 from app.core.config import get_settings
+from app.infrastructure.google_calendar import create_google_calendar_event
 
 settings = get_settings()
 
@@ -48,21 +50,55 @@ async def create_appointment(db: AsyncSession, data: dict):
     await db.commit()
     await db.refresh(appointment)
 
-    # Notify via notifications service (fire-and-forget)
+    # Fetch patient details from patients-service
+    patient_name = "Paciente"
+    patient_email = "paciente@demo.com"
     try:
         async with httpx.AsyncClient() as client:
+            # We assume PATIENTS_SERVICE_URL is available in settings
+            patient_resp = await client.get(
+                f"{settings.PATIENTS_SERVICE_URL}/api/v1/patients/{appointment.patient_id}",
+                timeout=3.0
+            )
+            if patient_resp.status_code == 200:
+                patient_data = patient_resp.json()
+                patient_name = f"{patient_data.get('first_name', '')} {patient_data.get('last_name', '')}".strip() or "Paciente"
+                patient_email = patient_data.get('email', patient_email)
+    except Exception as e:
+        print(f"Failed to fetch patient details for appointment {appointment.id}: {e}")
+
+    # Fire background notification & Google Calendar
+    try:
+        async with httpx.AsyncClient() as client:
+            # Notificar al paciente (Email de reserva creada)
             await client.post(
                 f"{settings.NOTIFICATIONS_SERVICE_URL}/api/v1/notifications/appointment-created",
                 json={
                     "appointment_id": appointment.id,
                     "patient_id": appointment.patient_id,
-                    "start_time": str(appointment.start_time),
-                    "reason": appointment.reason or "Consulta",
+                    "patient_name": patient_name,
+                    "patient_email": patient_email,
+                    "start_time": appointment.start_time.isoformat(),
+                    "reason": appointment.reason
                 },
-                timeout=3.0,
+                timeout=5.0,
             )
-    except Exception:
-        pass  # Don't fail the appointment if notification fails
+            # Notificar al doctor (UI de la campana)
+            await client.post(
+                f"{settings.NOTIFICATIONS_SERVICE_URL}/api/v1/notifications/appointment-event",
+                json={
+                    "appointment_id": appointment.id,
+                    "patient_id": appointment.patient_id,
+                    "patient_name": patient_name,
+                    "patient_email": patient_email,
+                    "start_time": appointment.start_time.isoformat(),
+                    "reason": appointment.reason
+                },
+                timeout=5.0,
+            )
+
+    except Exception as e:
+        print(f"Failed to send notifications: {e}")
 
     return appointment
 
@@ -186,6 +222,43 @@ async def get_availability(db: AsyncSession, date_str: str):
     return {"date": date_str, "available": available}
 
 
+async def get_general_availability(db: AsyncSession, date_str: str):
+    """Get available time slots for general booking minus already booked appointments."""
+    target_date = datetime.strptime(date_str, "%Y-%m-%d").date()
+
+    # Clinic hours used in the frontend form
+    all_slots = [
+        '08:00', '08:30', '09:00', '09:30', '10:00', '10:30',
+        '11:00', '11:30', '14:00', '14:30', '15:00', '15:30',
+        '16:00', '16:30', '17:00', '17:30'
+    ]
+
+    # Get booked appointments for this date
+    day_start = datetime(target_date.year, target_date.month, target_date.day, 0, 0)
+    day_end = datetime(target_date.year, target_date.month, target_date.day, 23, 59)
+
+    booked_result = await db.execute(
+        select(Appointment).where(
+            and_(
+                Appointment.start_time >= day_start,
+                Appointment.start_time <= day_end,
+                Appointment.status != "cancelada",
+            )
+        )
+    )
+    booked = booked_result.scalars().all()
+    booked_times = set()
+    for appt in booked:
+        if isinstance(appt.start_time, str):
+            dt = datetime.fromisoformat(appt.start_time)
+        else:
+            dt = appt.start_time
+        booked_times.add(f"{dt.hour:02d}:{dt.minute:02d}")
+
+    available = [s for s in all_slots if s not in booked_times]
+    return {"date": date_str, "available": available}
+
+
 async def get_ortho_dates(db: AsyncSession):
     """Get all dates that have ortho blocks (for the patient calendar)."""
     result = await db.execute(
@@ -242,23 +315,126 @@ async def public_booking(db: AsyncSession, data: dict):
     await db.commit()
     await db.refresh(appointment)
 
-    # Fire notification
+    # Fire notification and GCal
     try:
         async with httpx.AsyncClient() as client:
+            # Send HTML email 
             await client.post(
-                f"{settings.NOTIFICATIONS_SERVICE_URL}/api/v1/notifications/send-email",
+                f"{settings.NOTIFICATIONS_SERVICE_URL}/api/v1/notifications/appointment-created",
                 json={
-                    "to": data.get("email", ""),
-                    "subject": "Confirmación de Cita – Ortodoncia",
-                    "body": f"Hola {data['full_name']},\n\nTu cita de ortodoncia ha sido reservada para el {target_date} a las {time_str}.\n\nClínica Dental AN-SAR",
+                    "appointment_id": appointment.id,
+                    "patient_id": appointment.patient_id,
+                    "patient_name": data['full_name'],
+                    "patient_email": data.get("email", ""),
+                    "start_time": f"{target_date} {time_str}",
+                    "reason": appointment.reason
                 },
                 timeout=5.0,
             )
-    except Exception:
-        pass
+            # Send in-app notification to the doctor/clinic
+            await client.post(
+                f"{settings.NOTIFICATIONS_SERVICE_URL}/api/v1/notifications/appointment-event",
+                json={
+                    "appointment_id": appointment.id,
+                    "patient_id": appointment.patient_id,
+                    "patient_name": data['full_name'],
+                    "patient_email": data.get("email", ""),
+                    "start_time": f"{target_date} {time_str}",
+                    "reason": appointment.reason
+                },
+                timeout=5.0,
+            )
+            
+    except Exception as e:
+        print(f"Failed to send notifications for public ortho booking: {e}")
 
     return {
         "message": "Cita de ortodoncia reservada con éxito.",
+        "appointment_id": appointment.id,
+        "date": str(target_date),
+        "time": time_str,
+    }
+
+async def public_booking_general(db: AsyncSession, data: dict):
+    """Create appointment from public general booking page."""
+    target_date = data["date"]
+    time_str = data["time"]
+
+    # In a fully implemented system, we'd check general availability here. 
+    # For now (as requested by the current scope), we allow it but check for direct overlaps
+    
+    # Create start/end datetime
+    start_dt = datetime(target_date.year, target_date.month, target_date.day,
+                        int(time_str.split(":")[0]), int(time_str.split(":")[1]))
+    end_dt = start_dt + timedelta(minutes=30)
+    service_type = data.get("service", "General")
+
+    # Check if slot is already taken for the clinic (ignoring doctor_id for public bookings)
+    existing = await db.execute(
+        select(Appointment).where(
+            and_(
+                Appointment.start_time == start_dt,
+                Appointment.status != "cancelada",
+            )
+        )
+    )
+    if existing.scalars().first():
+        raise HTTPException(status_code=409, detail="Este horario acaba de ser tomado. Elige otro.")
+
+    appointment = Appointment(
+        patient_id=0,  # Will be resolved or created in a real system
+        start_time=start_dt,
+        end_time=end_dt,
+        reason=f"{service_type} – {data['full_name']}",
+        status="pendiente",
+        appointment_type="general",
+    )
+    db.add(appointment)
+    await db.commit()
+    await db.refresh(appointment)
+
+    # Fire patient email notification
+    try:
+        async with httpx.AsyncClient() as client:
+            resp = await client.post(
+                f"{settings.NOTIFICATIONS_SERVICE_URL}/api/v1/notifications/appointment-created",
+                json={
+                    "appointment_id": appointment.id,
+                    "patient_id": appointment.patient_id,
+                    "patient_name": data['full_name'],
+                    "patient_email": data.get("email", ""),
+                    "start_time": f"{target_date} {time_str}",
+                    "reason": appointment.reason
+                },
+                timeout=30.0,
+            )
+            print(f"✅ Patient email notification: {resp.status_code}")
+    except Exception as e:
+        import traceback
+        print(f"❌ Failed to send patient notification: {e}\n{traceback.format_exc()}")
+
+    # Fire doctor email notification (independent)
+    try:
+        async with httpx.AsyncClient() as client:
+            resp2 = await client.post(
+                f"{settings.NOTIFICATIONS_SERVICE_URL}/api/v1/notifications/appointment-event",
+                json={
+                    "appointment_id": appointment.id,
+                    "patient_id": appointment.patient_id,
+                    "patient_name": data['full_name'],
+                    "patient_email": data.get("email", ""),
+                    "start_time": f"{target_date} {time_str}",
+                    "reason": appointment.reason
+                },
+                timeout=30.0,
+            )
+            print(f"✅ Doctor email notification: {resp2.status_code}")
+    except Exception as e:
+        import traceback
+        print(f"❌ Failed to send doctor notification: {e}\n{traceback.format_exc()}")
+
+    return {
+        "message": "Cita general reservada con éxito.",
         "appointment_id": appointment.id,
         "date": str(target_date),
         "time": time_str,
