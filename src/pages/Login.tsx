@@ -1,40 +1,24 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Lock, Mail, ArrowRight } from 'lucide-react';
+import { Lock, Mail, Eye, EyeOff, ArrowRight } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { authAPI } from '../services/api';
 
 const Login = () => {
     const [email, setEmail] = useState('');
-    const [otp, setOtp] = useState('');
-    const [step, setStep] = useState('request'); // 'request' or 'verify'
+    const [password, setPassword] = useState('');
+    const [showPassword, setShowPassword] = useState(false);
     const [error, setError] = useState('');
     const [loading, setLoading] = useState(false);
     const navigate = useNavigate();
 
-    const handleRequestOTP = async (e: React.FormEvent) => {
+    const handleLogin = async (e: React.FormEvent) => {
         e.preventDefault();
         setLoading(true);
         setError('');
 
         try {
-            await authAPI.signInWithOtp(email);
-            setStep('verify');
-        } catch (err: any) {
-            console.error('OTP Request error:', err);
-            setError(err.message || 'Error al solicitar el código. Asegúrate de que el correo esté registrado.');
-        } finally {
-            setLoading(false);
-        }
-    };
-
-    const handleVerifyOTP = async (e: React.FormEvent) => {
-        e.preventDefault();
-        setLoading(true);
-        setError('');
-
-        try {
-            const { user } = await authAPI.verifyOtp(email, otp);
+            const { user } = await authAPI.login(email, password);
 
             localStorage.setItem('user', JSON.stringify({
                 id: user.id,
@@ -45,8 +29,8 @@ const Login = () => {
 
             setTimeout(() => navigate('/dashboard'), 800);
         } catch (err: any) {
-            console.error('OTP Verify error:', err);
-            setError(err.message || 'Código incorrecto o expirado');
+            console.error('Login error:', err);
+            setError(err.message || 'Credenciales incorrectas');
         } finally {
             setLoading(false);
         }
@@ -65,76 +49,59 @@ const Login = () => {
                 </div>
 
                 <div className="p-8">
-                    {step === 'request' ? (
-                        <form onSubmit={handleRequestOTP} className="space-y-6">
-                            <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-1">Correo Profesional</label>
-                                <div className="relative">
-                                    <Mail className="absolute left-3 top-3 text-gray-400" size={20} />
-                                    <input
-                                        type="email"
-                                        required
-                                        value={email}
-                                        onChange={(e) => setEmail(e.target.value)}
-                                        className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary outline-none transition-all"
-                                        placeholder="doctora@clinica.com"
-                                    />
-                                </div>
+                    <form onSubmit={handleLogin} className="space-y-6">
+                        <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-1">Correo Electrónico</label>
+                            <div className="relative">
+                                <Mail className="absolute left-3 top-3 text-gray-400" size={20} />
+                                <input
+                                    type="email"
+                                    required
+                                    value={email}
+                                    onChange={(e) => setEmail(e.target.value)}
+                                    className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary outline-none transition-all"
+                                    placeholder="doctor@clinica.com"
+                                />
                             </div>
+                        </div>
 
-                            {error && <div className="p-3 bg-red-50 text-red-600 text-sm rounded-lg text-center">{error}</div>}
-
-                            <button
-                                type="submit"
-                                disabled={loading}
-                                className="w-full bg-primary hover:bg-green-600 text-white py-3 rounded-lg font-bold shadow-md transition-all flex items-center justify-center space-x-2"
-                            >
-                                <span>{loading ? 'Enviando...' : 'Solicitar Código de Acceso'}</span>
-                                {!loading && <ArrowRight size={20} />}
-                            </button>
-                        </form>
-                    ) : (
-                        <form onSubmit={handleVerifyOTP} className="space-y-6">
-                            <div>
-                                <p className="text-sm text-gray-600 mb-4">
-                                    Hemos enviado un código a <strong>{email}</strong>.
-                                    Por favor, ingrésalo a continuación.
-                                </p>
-                                <label className="block text-sm font-medium text-gray-700 mb-1">Código de 6 dígitos</label>
-                                <div className="relative">
-                                    <Lock className="absolute left-3 top-3 text-gray-400" size={20} />
-                                    <input
-                                        type="text"
-                                        required
-                                        maxLength={6}
-                                        value={otp}
-                                        onChange={(e) => setOtp(e.target.value.replace(/\D/g, ''))}
-                                        className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary outline-none transition-all tracking-[1em] text-center text-xl font-bold"
-                                        placeholder="000000"
-                                    />
-                                </div>
+                        <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-1">Contraseña</label>
+                            <div className="relative">
+                                <Lock className="absolute left-3 top-3 text-gray-400" size={20} />
+                                <input
+                                    type={showPassword ? 'text' : 'password'}
+                                    required
+                                    value={password}
+                                    onChange={(e) => setPassword(e.target.value)}
+                                    className="w-full pl-10 pr-12 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary outline-none transition-all"
+                                    placeholder="••••••••"
+                                />
+                                <button
+                                    type="button"
+                                    onClick={() => setShowPassword(!showPassword)}
+                                    className="absolute right-3 top-3 text-gray-400 hover:text-gray-600"
+                                >
+                                    {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
+                                </button>
                             </div>
+                        </div>
 
-                            {error && <div className="p-3 bg-red-50 text-red-600 text-sm rounded-lg text-center">{error}</div>}
+                        {error && (
+                            <div className="p-3 bg-red-50 text-red-600 text-sm rounded-lg text-center">
+                                {error}
+                            </div>
+                        )}
 
-                            <button
-                                type="submit"
-                                disabled={loading}
-                                className="w-full bg-primary hover:bg-green-600 text-white py-3 rounded-lg font-bold shadow-md transition-all flex items-center justify-center space-x-2"
-                            >
-                                <span>{loading ? 'Verificando...' : 'Verificar e Ingresar'}</span>
-                                {!loading && <ArrowRight size={20} />}
-                            </button>
-
-                            <button
-                                type="button"
-                                onClick={() => setStep('request')}
-                                className="w-full text-sm text-gray-500 hover:text-primary transition-colors mt-2"
-                            >
-                                ¿No recibiste el código? Volver a intentar
-                            </button>
-                        </form>
-                    )}
+                        <button
+                            type="submit"
+                            disabled={loading}
+                            className="w-full bg-primary hover:bg-green-600 text-white py-3 rounded-lg font-bold shadow-md transition-all flex items-center justify-center space-x-2 disabled:opacity-60"
+                        >
+                            <span>{loading ? 'Ingresando...' : 'Iniciar Sesión'}</span>
+                            {!loading && <ArrowRight size={20} />}
+                        </button>
+                    </form>
 
                     <div className="mt-8 text-center border-t pt-6">
                         <a href="/" className="text-sm text-gray-500 hover:text-primary transition-colors">
