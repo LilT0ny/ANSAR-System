@@ -269,24 +269,6 @@ const Sidebar: React.FC<SidebarProps> = ({ isCollapsed = false, onToggle }) => {
                     {isCollapsed ? <ChevronRight size={14} /> : <ChevronLeft size={14} />}
                 </button>
             </motion.aside>
-
-            {/* Main Content Offset */}
-            <div
-                className="transition-all duration-300"
-                style={{ marginLeft: isCollapsed ? 80 : 280 }}
-            >
-                {/* Top Header */}
-                <header className="h-16 bg-white border-b border-gray-200 flex items-center justify-between px-6 shadow-sm">
-                    <div>
-                        <h2 className="text-lg font-bold text-gray-800">Bienvenido, {userName}</h2>
-                    </div>
-                    <div className="flex items-center gap-4">
-                        <span className="text-sm text-gray-500">
-                            {new Date().toLocaleDateString('es-ES', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}
-                        </span>
-                    </div>
-                </header>
-            </div>
         </>
     );
 };
