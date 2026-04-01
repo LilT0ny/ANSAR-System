@@ -1,19 +1,37 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { NavLink, useNavigate } from 'react-router-dom';
-import { Home, User, Calendar, FileText, Settings, LogOut, TrendingUp, Receipt, BarChart3, Bell, X, Menu } from 'lucide-react';
+import { 
+    Home, 
+    Users, 
+    Calendar, 
+    FileText, 
+    Settings, 
+    LogOut, 
+    TrendingUp, 
+    Receipt, 
+    BarChart3,
+    Bell,
+    ChevronLeft,
+    ChevronRight,
+    Activity
+} from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import clsx from 'clsx';
 
 import { notificationsAPI, authAPI } from '../services/api';
 
-const Sidebar = () => {
+interface SidebarProps {
+    isCollapsed?: boolean;
+    onToggle?: () => void;
+}
+
+const Sidebar: React.FC<SidebarProps> = ({ isCollapsed = false, onToggle }) => {
     const navigate = useNavigate();
     const [showNotifications, setShowNotifications] = useState(false);
-    const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
     const [notifications, setNotifications] = useState<any[]>([]);
     const notifRef = useRef<HTMLDivElement>(null);
 
-    // Polling original
+    // Polling for notifications
     useEffect(() => {
         const fetchNotifications = async () => {
             try {
@@ -22,12 +40,12 @@ const Sidebar = () => {
                     setNotifications(notifs.map(n => ({ ...n, read: n.is_read })));
                 }
             } catch (err) {
-                console.error("Error fetching notifications via Sidebar:", err);
+                console.error("Error fetching notifications:", err);
             }
         };
 
         fetchNotifications();
-        const interval = setInterval(fetchNotifications, 30000); // 30 sec polling
+        const interval = setInterval(fetchNotifications, 30000);
         return () => clearInterval(interval);
     }, []);
 
@@ -63,8 +81,8 @@ const Sidebar = () => {
     };
 
     const menuItems = [
-        { name: 'Inicio', path: '/dashboard', icon: Home },
-        { name: 'Pacientes', path: '/pacientes', icon: User },
+        { name: 'Dashboard', path: '/dashboard', icon: Home },
+        { name: 'Pacientes', path: '/pacientes', icon: Users },
         { name: 'Citas', path: '/citas', icon: Calendar },
         { name: 'Historia Clínica', path: '/historia', icon: FileText },
         { name: 'Facturación', path: '/facturacion', icon: Receipt },
@@ -74,7 +92,7 @@ const Sidebar = () => {
     ];
 
     const handleLogout = async () => {
-        if (window.confirm('¿Estás segura de que quieres cerrar sesión?')) {
+        if (window.confirm('¿Estás seguro de que quieres cerrar sesión?')) {
             try {
                 await authAPI.logout();
                 localStorage.removeItem('user');
@@ -89,229 +107,186 @@ const Sidebar = () => {
         }
     };
 
+    // Get user info
+    const user = JSON.parse(localStorage.getItem('user') || '{}');
+    const userName = user.name || user.full_name || 'Doctor';
+    const userInitial = userName.charAt(0).toUpperCase();
+
     return (
         <>
-            <div className="h-16 bg-white border-b border-gray-200 flex items-center justify-between px-4 md:px-6 shadow-sm sticky top-0 z-40">
-                <div className="flex items-center">
-                    {/* Hamburger Menu (Mobile only) */}
-                    <button
-                        onClick={() => setIsMobileMenuOpen(true)}
-                        className="p-2 mr-2 text-gray-500 hover:bg-gray-100 rounded-lg md:hidden"
-                    >
-                        <Menu size={24} />
-                    </button>
-
-                    <div className="flex items-center cursor-pointer" onClick={() => navigate('/dashboard')}>
-                        <div className="w-8 h-8 bg-primary rounded-lg flex items-center justify-center text-white font-serif font-bold text-lg mr-2 md:mr-3 shadow-sm hover:shadow-md transition-shadow">
-                            A
+            {/* Sidebar Container */}
+            <motion.aside
+                initial={false}
+                animate={{ width: isCollapsed ? 80 : 280 }}
+                className="fixed left-0 top-0 h-screen bg-gradient-to-b from-gray-900 via-gray-800 to-gray-900 z-40 flex flex-col shadow-2xl"
+            >
+                {/* Logo Section */}
+                <div className="p-4 md:p-6 border-b border-gray-700/50">
+                    <div className="flex items-center justify-between">
+                        <div className={clsx("flex items-center transition-all", isCollapsed ? "justify-center" : "gap-3")}>
+                            <div className="w-10 h-10 bg-gradient-to-br from-primary to-green-400 rounded-xl flex items-center justify-center text-white font-bold text-xl shadow-lg shadow-primary/30">
+                                A
+                            </div>
+                            {!isCollapsed && (
+                                <div>
+                                    <h1 className="text-xl font-bold text-white font-serif tracking-wide">AN-SAR</h1>
+                                    <p className="text-[10px] text-gray-400 -mt-0.5">Portal Clínico</p>
+                                </div>
+                            )}
                         </div>
-                        <h1 className="text-xl font-serif font-bold text-gray-800 tracking-wide">AN-SAR</h1>
                     </div>
                 </div>
 
-                {/* Desktop Navigation */}
-                <nav className="hidden md:flex space-x-1">
-                    {menuItems.map((item) => (
-                        <NavLink
-                            key={item.path}
-                            to={item.path}
-                            className={({ isActive }) =>
-                                clsx(
-                                    'flex items-center px-4 py-2 rounded-lg text-sm font-medium transition-colors whitespace-nowrap',
-                                    isActive
-                                        ? 'bg-primary/10 text-primary'
-                                        : 'text-gray-500 hover:bg-gray-50 hover:text-gray-900'
-                                )
-                            }
-                        >
-                            <item.icon size={18} className="mr-2" />
-                            <span>{item.name}</span>
-                        </NavLink>
-                    ))}
+                {/* Navigation Menu */}
+                <nav className="flex-1 py-4 px-3 overflow-y-auto">
+                    <ul className="space-y-1">
+                        {menuItems.map((item) => (
+                            <li key={item.path}>
+                                <NavLink
+                                    to={item.path}
+                                    className={({ isActive }) =>
+                                        clsx(
+                                            'flex items-center gap-3 px-3 py-3 rounded-xl transition-all duration-200 group relative',
+                                            isActive
+                                                ? 'bg-gradient-to-r from-primary to-green-500 text-white shadow-lg shadow-primary/30'
+                                                : 'text-gray-400 hover:bg-gray-700/50 hover:text-white'
+                                        )
+                                    }
+                                >
+                                    {({ isActive }) => (
+                                        <>
+                                            <item.icon size={20} className={clsx("transition-transform", !isCollapsed && "group-hover:scale-110")} />
+                                            {!isCollapsed && (
+                                                <span className="font-medium text-sm">{item.name}</span>
+                                            )}
+                                            {/* Active indicator */}
+                                            {isActive && (
+                                                <div className="absolute right-2 w-1.5 h-1.5 bg-white rounded-full" />
+                                            )}
+                                        </>
+                                    )}
+                                </NavLink>
+                            </li>
+                        ))}
+                    </ul>
                 </nav>
 
-                {/* Right section: Notifications + Logout */}
-                <div className="flex items-center space-x-1 md:space-x-2">
-                    {/* Notifications Bell */}
-                    <div className="relative" ref={notifRef}>
+                {/* User Section */}
+                <div className="p-4 border-t border-gray-700/50">
+                    {/* Notifications */}
+                    <div className="relative mb-3" ref={notifRef}>
                         <button
                             onClick={() => setShowNotifications(!showNotifications)}
-                            className="relative flex items-center text-gray-400 hover:text-primary transition-colors p-2 rounded-lg hover:bg-green-50"
-                            title="Notificaciones"
-                        >
-                            <Bell size={20} />
-                            {unreadCount > 0 && (
-                                <span className="absolute -top-0.5 -right-0.5 h-4 w-4 md:h-5 md:w-5 bg-red-500 rounded-full text-white text-[8px] md:text-[10px] font-bold flex items-center justify-center border-2 border-white animate-pulse">
-                                    {unreadCount}
-                                </span>
+                            className={clsx(
+                                "flex items-center w-full rounded-xl transition-all hover:bg-gray-700/50",
+                                isCollapsed ? "justify-center p-3" : "px-3 py-3"
                             )}
+                        >
+                            <div className="relative">
+                                <Bell size={20} className="text-gray-400" />
+                                {unreadCount > 0 && (
+                                    <span className="absolute -top-1 -right-1 h-4 w-4 bg-red-500 rounded-full text-white text-[8px] font-bold flex items-center justify-center">
+                                        {unreadCount}
+                                    </span>
+                                )}
+                            </div>
+                            {!isCollapsed && <span className="ml-3 text-sm text-gray-400">Notificaciones</span>}
                         </button>
 
                         {/* Notifications Dropdown */}
                         {showNotifications && (
-                            <div className="absolute right-0 top-12 w-[calc(100vw-2rem)] md:w-96 bg-white rounded-2xl shadow-xl border border-gray-100 overflow-hidden z-50 animate-in slide-in-from-top-2">
-                                {/* Dropdown Header */}
-                                <div className="flex items-center justify-between px-5 py-4 border-b border-gray-100 bg-gray-50/50">
-                                    <div>
-                                        <h3 className="text-sm font-bold text-gray-800 font-serif">Notificaciones</h3>
-                                        <p className="text-xs text-gray-500 mt-0.5">Reservas de pacientes</p>
-                                    </div>
-                                    <div className="flex items-center gap-2">
-                                        {notifications.length > 0 && (
-                                            <button
-                                                onClick={clearAllNotifications}
-                                                className="text-xs text-red-500 hover:text-red-700 hover:underline font-medium"
-                                            >
-                                                Limpiar todas
-                                            </button>
-                                        )}
+                            <div className="absolute bottom-full left-0 w-80 mb-2 bg-white rounded-2xl shadow-xl border border-gray-100 overflow-hidden">
+                                <div className="flex items-center justify-between px-4 py-3 border-b border-gray-100">
+                                    <h3 className="text-sm font-bold text-gray-800">Notificaciones</h3>
+                                    {notifications.length > 0 && (
                                         <button
-                                            onClick={() => setShowNotifications(false)}
-                                            className="text-gray-400 hover:text-gray-600 p-1 hover:bg-gray-100 rounded-lg transition-colors"
+                                            onClick={clearAllNotifications}
+                                            className="text-xs text-red-500 hover:text-red-700"
                                         >
-                                            <X size={16} />
+                                            Limpiar
                                         </button>
-                                    </div>
-                                </div>
-
-                                {/* Notification Items */}
-                                <div className="max-h-80 overflow-y-auto">
-                                    {notifications.length === 0 ? (
-                                        <div className="p-8 text-center text-gray-400 text-sm">
-                                            No hay notificaciones
-                                        </div>
-                                    ) : (
-                                        notifications.map((notif) => {
-                                            const d = new Date(notif.created_at + 'Z');
-                                            const timeAgo = Math.floor((new Date().getTime() - d.getTime()) / 60000);
-                                            let timeText = 'ahora';
-                                            if (timeAgo > 60) timeText = `hace ${Math.floor(timeAgo / 60)}h`;
-                                            else if (timeAgo > 0) timeText = `hace ${timeAgo}m`;
-
-                                            const pName = notif.subject || 'Cita';
-                                            const shortName = pName.split(' ').map((n: string) => n?.[0]).join('').substring(0, 2);
-
-                                            return (
-                                                <div
-                                                    key={notif.id}
-                                                    onClick={() => { markAsRead(notif.id); setIsMobileMenuOpen(false); }}
-                                                    className={clsx(
-                                                        'flex items-start gap-3 px-5 py-3.5 cursor-pointer transition-colors border-b border-gray-50 last:border-b-0',
-                                                        !notif.read ? 'bg-primary/5 hover:bg-primary/10' : 'hover:bg-gray-50'
-                                                    )}
-                                                >
-                                                    <div className="h-9 w-9 rounded-full bg-primary/10 text-primary flex items-center justify-center font-bold text-xs flex-shrink-0 mt-0.5">
-                                                        {shortName}
-                                                    </div>
-                                                    <div className="flex-1 min-w-0">
-                                                        <div className="flex items-center justify-between gap-2">
-                                                            <p className={clsx('text-sm truncate', !notif.read ? 'font-bold text-gray-800' : 'font-medium text-gray-600')}>
-                                                                {pName}
-                                                            </p>
-                                                            <span className="text-[10px] text-gray-400 font-medium shrink-0">{timeText}</span>
-                                                        </div>
-                                                        <p className="text-xs text-gray-500 mt-0.5" dangerouslySetInnerHTML={{ __html: notif.message_content?.replace(/<[^>]*>?/gm, ' ') || '' }}></p>
-                                                    </div>
-                                                    {!notif.read && (
-                                                        <div className="h-2 w-2 bg-primary rounded-full flex-shrink-0 mt-2"></div>
-                                                    )}
-                                                </div>
-                                            );
-                                        })
                                     )}
                                 </div>
-
-                                <div className="px-5 py-3 border-t border-gray-100 bg-gray-50/50">
-                                    <button
-                                        onClick={() => { navigate('/citas'); setShowNotifications(false); }}
-                                        className="w-full text-center text-sm text-primary font-medium hover:underline"
-                                    >
-                                        Ver todas las citas
-                                    </button>
+                                <div className="max-h-60 overflow-y-auto">
+                                    {notifications.length === 0 ? (
+                                        <div className="p-4 text-center text-gray-400 text-sm">
+                                            Sin notificaciones
+                                        </div>
+                                    ) : (
+                                        notifications.slice(0, 5).map((notif) => (
+                                            <div
+                                                key={notif.id}
+                                                onClick={() => markAsRead(notif.id)}
+                                                className={clsx(
+                                                    "px-4 py-3 cursor-pointer hover:bg-gray-50 border-b border-gray-50",
+                                                    !notif.read && "bg-primary/5"
+                                                )}
+                                            >
+                                                <p className="text-sm font-medium text-gray-800">{notif.subject || 'Cita'}</p>
+                                                <p className="text-xs text-gray-500 mt-0.5">{notif.message_content?.substring(0, 50)}...</p>
+                                            </div>
+                                        ))
+                                    )}
                                 </div>
                             </div>
                         )}
                     </div>
 
-                    {/* Logout */}
+                    {/* User Profile */}
+                    <div className={clsx(
+                        "flex items-center rounded-xl bg-gray-800/50 p-3",
+                        isCollapsed ? "justify-center" : "gap-3"
+                    )}>
+                        <div className="w-9 h-9 bg-gradient-to-br from-primary to-green-400 rounded-full flex items-center justify-center text-white font-bold text-sm">
+                            {userInitial}
+                        </div>
+                        {!isCollapsed && (
+                            <div className="flex-1 min-w-0">
+                                <p className="text-sm font-medium text-white truncate">{userName}</p>
+                                <p className="text-[10px] text-gray-400 truncate">{user.email || 'Doctor'}</p>
+                            </div>
+                        )}
+                    </div>
+
+                    {/* Logout Button */}
                     <button
                         onClick={handleLogout}
-                        className="flex items-center text-gray-400 hover:text-red-500 transition-colors p-2 rounded-lg hover:bg-red-50"
-                        title="Cerrar Sesión"
+                        className={clsx(
+                            "flex items-center w-full mt-2 rounded-xl text-red-400 hover:bg-red-500/10 transition-colors",
+                            isCollapsed ? "justify-center p-3" : "px-3 py-3"
+                        )}
                     >
                         <LogOut size={20} />
+                        {!isCollapsed && <span className="ml-3 text-sm font-medium">Cerrar Sesión</span>}
                     </button>
-                    <span className="text-xs text-gray-400 font-medium hidden lg:inline">Salir</span>
                 </div>
+
+                {/* Toggle Button */}
+                <button
+                    onClick={onToggle}
+                    className="absolute -right-3 top-20 w-6 h-6 bg-gray-700 rounded-full flex items-center justify-center text-gray-400 hover:text-white hover:bg-gray-600 shadow-lg transition-all"
+                >
+                    {isCollapsed ? <ChevronRight size={14} /> : <ChevronLeft size={14} />}
+                </button>
+            </motion.aside>
+
+            {/* Main Content Offset */}
+            <div
+                className="transition-all duration-300"
+                style={{ marginLeft: isCollapsed ? 80 : 280 }}
+            >
+                {/* Top Header */}
+                <header className="h-16 bg-white border-b border-gray-200 flex items-center justify-between px-6 shadow-sm">
+                    <div>
+                        <h2 className="text-lg font-bold text-gray-800">Bienvenido, {userName}</h2>
+                    </div>
+                    <div className="flex items-center gap-4">
+                        <span className="text-sm text-gray-500">
+                            {new Date().toLocaleDateString('es-ES', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}
+                        </span>
+                    </div>
+                </header>
             </div>
-
-            {/* Mobile Drawer Overlay */}
-            <AnimatePresence>
-                {isMobileMenuOpen && (
-                    <>
-                        <motion.div
-                            initial={{ opacity: 0 }}
-                            animate={{ opacity: 1 }}
-                            exit={{ opacity: 0 }}
-                            onClick={() => setIsMobileMenuOpen(false)}
-                            className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 md:hidden"
-                        />
-                        <motion.div
-                            initial={{ x: '-100%' }}
-                            animate={{ x: 0 }}
-                            exit={{ x: '-100%' }}
-                            transition={{ type: 'spring', damping: 25, stiffness: 200 }}
-                            className="fixed inset-y-0 left-0 w-72 bg-white z-50 md:hidden shadow-2xl flex flex-col"
-                        >
-                            <div className="p-6 border-b border-gray-100 flex items-center justify-between">
-                                <div className="flex items-center">
-                                    <div className="w-8 h-8 bg-primary rounded-lg flex items-center justify-center text-white font-serif font-bold text-lg mr-2">
-                                        A
-                                    </div>
-                                    <h1 className="text-xl font-serif font-bold text-gray-800">AN-SAR</h1>
-                                </div>
-                                <button
-                                    onClick={() => setIsMobileMenuOpen(false)}
-                                    className="p-2 text-gray-400 hover:bg-gray-100 rounded-lg"
-                                >
-                                    <X size={24} />
-                                </button>
-                            </div>
-
-                            <nav className="flex-1 overflow-y-auto p-4 space-y-2">
-                                {menuItems.map((item) => (
-                                    <NavLink
-                                        key={item.path}
-                                        to={item.path}
-                                        onClick={() => setIsMobileMenuOpen(false)}
-                                        className={({ isActive }) =>
-                                            clsx(
-                                                'flex items-center px-4 py-3 rounded-xl text-base font-bold transition-all',
-                                                isActive
-                                                    ? 'bg-primary text-white shadow-lg shadow-primary/20'
-                                                    : 'text-gray-600 hover:bg-gray-50'
-                                            )
-                                        }
-                                    >
-                                        <item.icon size={22} className="mr-3" />
-                                        <span>{item.name}</span>
-                                    </NavLink>
-                                ))}
-                            </nav>
-
-                            <div className="p-4 border-t border-gray-100">
-                                <button
-                                    onClick={() => { handleLogout(); setIsMobileMenuOpen(false); }}
-                                    className="flex items-center w-full px-4 py-3 text-red-500 hover:bg-red-50 rounded-xl font-bold transition-colors"
-                                >
-                                    <LogOut size={22} className="mr-3" />
-                                    Cerrar Sesión
-                                </button>
-                            </div>
-                        </motion.div>
-                    </>
-                )}
-            </AnimatePresence>
         </>
     );
 };
