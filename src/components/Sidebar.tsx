@@ -12,8 +12,7 @@ import {
     BarChart3,
     Bell,
     ChevronLeft,
-    ChevronRight,
-    Activity
+    Menu
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import clsx from 'clsx';
@@ -114,22 +113,22 @@ const Sidebar: React.FC<SidebarProps> = ({ isCollapsed = false, onToggle }) => {
 
     return (
         <>
-            {/* Sidebar Container */}
+            {/* Sidebar Container - White/Light Theme */}
             <motion.aside
                 initial={false}
                 animate={{ width: isCollapsed ? 80 : 280 }}
-                className="fixed left-0 top-0 h-screen bg-gradient-to-b from-gray-900 via-gray-800 to-gray-900 z-40 flex flex-col shadow-2xl"
+                className="fixed left-0 top-0 h-screen bg-white z-40 flex flex-col shadow-xl border-r border-gray-200"
             >
                 {/* Logo Section */}
-                <div className="p-4 md:p-6 border-b border-gray-700/50">
+                <div className="p-4 md:p-6 border-b border-gray-100">
                     <div className="flex items-center justify-between">
                         <div className={clsx("flex items-center transition-all", isCollapsed ? "justify-center" : "gap-3")}>
-                            <div className="w-10 h-10 bg-gradient-to-br from-primary to-green-400 rounded-xl flex items-center justify-center text-white font-bold text-xl shadow-lg shadow-primary/30">
+                            <div className="w-10 h-10 bg-primary rounded-xl flex items-center justify-center text-white font-bold text-xl shadow-md">
                                 A
                             </div>
                             {!isCollapsed && (
                                 <div>
-                                    <h1 className="text-xl font-bold text-white font-serif tracking-wide">AN-SAR</h1>
+                                    <h1 className="text-xl font-bold text-gray-800 font-serif tracking-wide">AN-SAR</h1>
                                     <p className="text-[10px] text-gray-400 -mt-0.5">Portal Clínico</p>
                                 </div>
                             )}
@@ -146,24 +145,16 @@ const Sidebar: React.FC<SidebarProps> = ({ isCollapsed = false, onToggle }) => {
                                     to={item.path}
                                     className={({ isActive }) =>
                                         clsx(
-                                            'flex items-center gap-3 px-3 py-3 rounded-xl transition-all duration-200 group relative',
+                                            'flex items-center gap-3 px-3 py-3 rounded-xl transition-all duration-200 group',
                                             isActive
-                                                ? 'bg-gradient-to-r from-primary to-green-500 text-white shadow-lg shadow-primary/30'
-                                                : 'text-gray-400 hover:bg-gray-700/50 hover:text-white'
+                                                ? 'bg-primary/10 text-primary'
+                                                : 'text-gray-500 hover:bg-gray-50 hover:text-gray-900'
                                         )
                                     }
                                 >
-                                    {({ isActive }) => (
-                                        <>
-                                            <item.icon size={20} className={clsx("transition-transform", !isCollapsed && "group-hover:scale-110")} />
-                                            {!isCollapsed && (
-                                                <span className="font-medium text-sm">{item.name}</span>
-                                            )}
-                                            {/* Active indicator */}
-                                            {isActive && (
-                                                <div className="absolute right-2 w-1.5 h-1.5 bg-white rounded-full" />
-                                            )}
-                                        </>
+                                    <item.icon size={20} className="transition-transform group-hover:scale-110" />
+                                    {!isCollapsed && (
+                                        <span className="font-medium text-sm">{item.name}</span>
                                     )}
                                 </NavLink>
                             </li>
@@ -172,13 +163,13 @@ const Sidebar: React.FC<SidebarProps> = ({ isCollapsed = false, onToggle }) => {
                 </nav>
 
                 {/* User Section */}
-                <div className="p-4 border-t border-gray-700/50">
+                <div className="p-4 border-t border-gray-100">
                     {/* Notifications */}
                     <div className="relative mb-3" ref={notifRef}>
                         <button
                             onClick={() => setShowNotifications(!showNotifications)}
                             className={clsx(
-                                "flex items-center w-full rounded-xl transition-all hover:bg-gray-700/50",
+                                "flex items-center w-full rounded-xl transition-all hover:bg-gray-50",
                                 isCollapsed ? "justify-center p-3" : "px-3 py-3"
                             )}
                         >
@@ -190,7 +181,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isCollapsed = false, onToggle }) => {
                                     </span>
                                 )}
                             </div>
-                            {!isCollapsed && <span className="ml-3 text-sm text-gray-400">Notificaciones</span>}
+                            {!isCollapsed && <span className="ml-3 text-sm text-gray-500">Notificaciones</span>}
                         </button>
 
                         {/* Notifications Dropdown */}
@@ -234,15 +225,15 @@ const Sidebar: React.FC<SidebarProps> = ({ isCollapsed = false, onToggle }) => {
 
                     {/* User Profile */}
                     <div className={clsx(
-                        "flex items-center rounded-xl bg-gray-800/50 p-3",
+                        "flex items-center rounded-xl bg-gray-50 p-3",
                         isCollapsed ? "justify-center" : "gap-3"
                     )}>
-                        <div className="w-9 h-9 bg-gradient-to-br from-primary to-green-400 rounded-full flex items-center justify-center text-white font-bold text-sm">
+                        <div className="w-9 h-9 bg-primary rounded-full flex items-center justify-center text-white font-bold text-sm">
                             {userInitial}
                         </div>
                         {!isCollapsed && (
                             <div className="flex-1 min-w-0">
-                                <p className="text-sm font-medium text-white truncate">{userName}</p>
+                                <p className="text-sm font-medium text-gray-800 truncate">{userName}</p>
                                 <p className="text-[10px] text-gray-400 truncate">{user.email || 'Doctor'}</p>
                             </div>
                         )}
@@ -252,7 +243,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isCollapsed = false, onToggle }) => {
                     <button
                         onClick={handleLogout}
                         className={clsx(
-                            "flex items-center w-full mt-2 rounded-xl text-red-400 hover:bg-red-500/10 transition-colors",
+                            "flex items-center w-full mt-2 rounded-xl text-gray-500 hover:bg-red-50 hover:text-red-500 transition-colors",
                             isCollapsed ? "justify-center p-3" : "px-3 py-3"
                         )}
                     >
@@ -264,9 +255,9 @@ const Sidebar: React.FC<SidebarProps> = ({ isCollapsed = false, onToggle }) => {
                 {/* Toggle Button */}
                 <button
                     onClick={onToggle}
-                    className="absolute -right-3 top-20 w-6 h-6 bg-gray-700 rounded-full flex items-center justify-center text-gray-400 hover:text-white hover:bg-gray-600 shadow-lg transition-all"
+                    className="absolute -right-3 top-24 w-6 h-6 bg-white border border-gray-200 rounded-full flex items-center justify-center text-gray-400 hover:text-primary hover:border-primary shadow-md transition-all"
                 >
-                    {isCollapsed ? <ChevronRight size={14} /> : <ChevronLeft size={14} />}
+                    {isCollapsed ? <Menu size={14} /> : <ChevronLeft size={14} />}
                 </button>
             </motion.aside>
         </>
