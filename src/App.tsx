@@ -3,7 +3,6 @@ import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import Dashboard from './pages/Dashboard';
 import Patients from './pages/Patients';
 import ClinicalHistory from './pages/ClinicalHistory';
-import Analytics from './pages/Analytics';
 import Appointments from './pages/Appointments';
 import Settings from './pages/Settings';
 import LandingPage from './pages/LandingPage';
@@ -11,7 +10,6 @@ import Login from './pages/Login';
 import Booking from './pages/Booking';
 import OrthodonticsBooking from './pages/OrthodonticsBooking';
 import Billing from './pages/Billing';
-import FinanceDashboard from './pages/FinanceDashboard';
 import AdminLayout from './layouts/AdminLayout';
 
 function App() {
@@ -30,10 +28,8 @@ function App() {
                         <Route path="/dashboard" element={<Dashboard />} />
                         <Route path="/pacientes" element={<Patients />} />
                         <Route path="/historia/:id?" element={<ClinicalHistory />} />
-                        <Route path="/analytics" element={<Analytics />} />
                         <Route path="/citas" element={<Appointments />} />
                         <Route path="/facturacion" element={<Billing />} />
-                        <Route path="/finanzas" element={<FinanceDashboard />} />
                         <Route path="/configuracion" element={<Settings />} />
                     </Route>
                 </Routes>

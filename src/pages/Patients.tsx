@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useForm } from 'react-hook-form';
-import { Search, Plus, Edit, Trash2, X, Check, Loader2, RefreshCw } from 'lucide-react';
+import { Search, Plus, Edit, Trash2, X, Check, Loader2, RefreshCw, MessageCircle } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import clsx from 'clsx';
 import { patientsAPI } from '../services/api';
@@ -92,6 +92,17 @@ const Patients = () => {
         }
     };
 
+    // ── Open WhatsApp ─────────────────────────────────────
+    const handleWhatsApp = (patient: Patient) => {
+        if (!patient.phone) {
+            setError('El paciente no tiene teléfono registrado');
+            return;
+        }
+        const phone = patient.phone.replace(/\D/g, '');
+        const message = encodeURIComponent(`Hola ${patient.first_name}, te contactamos de la clínica dental. ¿En qué podemos ayudarte?`);
+        window.open(`https://wa.me/${phone}?text=${message}`, '_blank');
+    };
+
     // ── Filter patients locally (search) ──────────────────────
     const filteredPatients = patients.filter(patient => {
         const term = searchTerm.toLowerCase();
@@ -154,7 +165,7 @@ const Patients = () => {
                 )}
             </div>
 
-            {/* Patients Table */}
+            {/* Patients List - Cards on Mobile, Table on Desktop */}
             <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
                 {loading ? (
                     <div className="flex items-center justify-center py-16">
@@ -162,89 +173,128 @@ const Patients = () => {
                         <span className="text-gray-500 font-medium">Cargando pacientes...</span>
                     </div>
                 ) : (
-                    <div className="overflow-x-auto scrollbar-thin scrollbar-thumb-gray-200">
-                        <table className="w-full text-left min-w-[1000px]">
-                            <thead className="bg-primary text-white font-medium text-sm">
-                                <tr>
-                                    <th className="px-6 py-4">Paciente</th>
-                                    <th className="px-6 py-4">Documento</th>
-                                    <th className="px-6 py-4">Edad</th>
-                                    <th className="px-6 py-4">Género</th>
-                                    <th className="px-6 py-4">Contacto</th>
-                                    <th className="px-6 py-4">Ciudad</th>
-                                    <th className="px-6 py-4">Deuda</th>
-                                    <th className="px-6 py-4">Registrado</th>
-                                    <th className="px-6 py-4 text-center">Acciones</th>
-                                </tr>
-                            </thead>
-                            <tbody className="divide-y divide-gray-100 text-sm">
-                                {filteredPatients.map((patient) => (
-                                    <tr key={patient.id} className="hover:bg-gray-50 transition-colors">
-                                        <td className="px-6 py-4">
-                                            <div className="text-base font-semibold text-gray-900">
-                                                {patient.first_name} {patient.last_name}
+                    <>
+                        {/* Mobile Card View */}
+                        <div className="md:hidden divide-y divide-gray-100">
+                            {filteredPatients.map((patient) => (
+                                <div key={patient.id} className="p-4 flex items-center justify-between">
+                                    <div className="flex items-center gap-3 flex-1 min-w-0">
+                                        <div className="w-10 h-10 bg-primary/10 rounded-full flex items-center justify-center text-primary font-bold shrink-0">
+                                            {patient.first_name?.charAt(0)}{patient.last_name?.charAt(0)}
+                                        </div>
+                                        <div className="min-w-0">
+                                            <h3 className="font-semibold text-gray-900 truncate">{patient.first_name} {patient.last_name}</h3>
+                                            <div className="flex items-center gap-2 text-xs text-gray-500">
+                                                <span>{calculateAge(patient.date_of_birth)} años</span>
+                                                <span>•</span>
+                                                <span className={Number(patient.debt || 0) > 0 ? 'text-red-600' : 'text-green-600'}>
+                                                    ${Number(patient.debt || 0).toFixed(2)}
+                                                </span>
                                             </div>
-                                        </td>
-                                        <td className="px-6 py-4 text-sm text-gray-500 font-mono">
-                                            {patient.document_id}
-                                        </td>
-                                        <td className="px-6 py-4 text-sm text-gray-700 font-medium">
-                                            {calculateAge(patient.date_of_birth)} años
-                                        </td>
-                                        <td className="px-6 py-4 text-sm text-gray-500 capitalize">
-                                            {patient.gender || '—'}
-                                        </td>
-                                        <td className="px-6 py-4 text-gray-600">
-                                            <div className="flex flex-col">
-                                                <span>{patient.email || '—'}</span>
-                                                <span className="text-xs text-gray-400">{patient.phone || '—'}</span>
-                                            </div>
-                                        </td>
-                                        <td className="px-6 py-4 text-sm text-gray-500">
-                                            {patient.city || '—'}
-                                        </td>
-                                        <td className="px-6 py-4 text-sm font-medium">
-                                            {Number(patient.debt || 0) > 0 ? (
-                                                <span className="text-red-600">${Number(patient.debt).toFixed(2)}</span>
-                                            ) : (
-                                                <span className="text-green-600">$0.00</span>
-                                            )}
-                                        </td>
-                                        <td className="px-6 py-4 text-sm text-gray-400">
-                                            {patient.created_at
-                                                ? new Date(patient.created_at).toLocaleDateString('es-ES')
-                                                : '—'}
-                                        </td>
-                                        <td className="px-6 py-4 flex justify-center space-x-3 items-center">
+                                        </div>
+                                    </div>
+                                    <div className="flex gap-1">
+                                        <button
+                                            onClick={() => navigate(`/historia/${patient.id}`)}
+                                            className="p-2 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg"
+                                        >
+                                            <Edit size={16} />
+                                        </button>
+                                        {patient.phone && (
                                             <button
-                                                onClick={() => navigate(`/historia/${patient.id}`)}
-                                                className="text-gray-400 hover:text-blue-600 transition-colors"
-                                                title="Ver Historial / Editar"
+                                                onClick={() => handleWhatsApp(patient)}
+                                                className="p-2 text-gray-400 hover:text-green-500 hover:bg-green-50 rounded-lg"
                                             >
-                                                <Edit size={18} />
+                                                <MessageCircle size={16} />
                                             </button>
-                                            <button
-                                                className="text-gray-400 hover:text-red-500 transition-colors"
-                                                title="Eliminar Paciente"
-                                                onClick={() => handleDelete(patient.id)}
-                                            >
-                                                <Trash2 size={18} />
-                                            </button>
-                                        </td>
-                                    </tr>
-                                ))}
-                                {filteredPatients.length === 0 && !loading && (
+                                        )}
+                                        <button
+                                            onClick={() => handleDelete(patient.id)}
+                                            className="p-2 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-lg"
+                                        >
+                                            <Trash2 size={16} />
+                                        </button>
+                                    </div>
+                                </div>
+                            ))}
+                            {filteredPatients.length === 0 && (
+                                <div className="px-6 py-12 text-center text-gray-400">
+                                    {searchTerm
+                                        ? 'No se encontraron pacientes.'
+                                        : 'No hay pacientes registrados.'}
+                                </div>
+                            )}
+                        </div>
+
+                        {/* Desktop Table View */}
+                        <div className="hidden md:block overflow-x-auto scrollbar-thin scrollbar-thumb-gray-200">
+                            <table className="w-full text-left min-w-[1000px]">
+                                <thead className="bg-primary text-white font-medium text-sm">
                                     <tr>
-                                        <td colSpan={9} className="px-6 py-12 text-center text-gray-400">
-                                            {searchTerm
-                                                ? 'No se encontraron pacientes con ese criterio.'
-                                                : 'No hay pacientes registrados. Haz clic en "Nuevo Paciente" para comenzar.'}
-                                        </td>
+                                        <th className="px-4 py-3">Paciente</th>
+                                        <th className="px-4 py-3">Edad</th>
+                                        <th className="px-4 py-3">Deuda</th>
+                                        <th className="px-4 py-3 text-center">Acciones</th>
                                     </tr>
-                                )}
-                            </tbody>
-                        </table>
-                    </div>
+                                </thead>
+                                <tbody className="divide-y divide-gray-100 text-sm">
+                                    {filteredPatients.map((patient) => (
+                                        <tr key={patient.id} className="hover:bg-gray-50 transition-colors">
+                                            <td className="px-4 py-3">
+                                                <div className="text-base font-semibold text-gray-900">
+                                                    {patient.first_name} {patient.last_name}
+                                                </div>
+                                            </td>
+                                            <td className="px-4 py-3 text-sm text-gray-600">
+                                                {calculateAge(patient.date_of_birth)} años
+                                            </td>
+                                            <td className="px-4 py-3 text-sm font-medium">
+                                                {Number(patient.debt || 0) > 0 ? (
+                                                    <span className="text-red-600">${Number(patient.debt).toFixed(2)}</span>
+                                                ) : (
+                                                    <span className="text-green-600">$0.00</span>
+                                                )}
+                                            </td>
+                                            <td className="px-4 py-3 flex justify-center gap-2">
+                                                <button
+                                                    onClick={() => navigate(`/historia/${patient.id}`)}
+                                                    className="p-1.5 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
+                                                    title="Ver/Editar Historia"
+                                                >
+                                                    <Edit size={16} />
+                                                </button>
+                                                {patient.phone && (
+                                                    <button
+                                                        onClick={() => handleWhatsApp(patient)}
+                                                        className="p-1.5 text-gray-400 hover:text-green-500 hover:bg-green-50 rounded-lg transition-colors"
+                                                        title="Enviar WhatsApp"
+                                                    >
+                                                        <MessageCircle size={16} />
+                                                    </button>
+                                                )}
+                                                <button
+                                                    className="p-1.5 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors"
+                                                    title="Eliminar"
+                                                    onClick={() => handleDelete(patient.id)}
+                                                >
+                                                    <Trash2 size={16} />
+                                                </button>
+                                            </td>
+                                        </tr>
+                                    ))}
+                                    {filteredPatients.length === 0 && !loading && (
+                                        <tr>
+                                            <td colSpan={4} className="px-4 py-12 text-center text-gray-400">
+                                                {searchTerm
+                                                    ? 'No se encontraron pacientes con ese criterio.'
+                                                    : 'No hay pacientes registrados.'}
+                                            </td>
+                                        </tr>
+                                    )}
+                                </tbody>
+                            </table>
+                        </div>
+                    </>
                 )}
             </div>
 

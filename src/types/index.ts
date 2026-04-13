@@ -1,23 +1,62 @@
+// =============================================
+// MEDICORE - TIPOS TypeScript
+// =============================================
+
+// 1. USER (Doctor)
+export interface User {
+    id: string;
+    email: string;
+    password_hash?: string;
+    full_name: string;
+    specialty?: string;
+    phone?: string;
+    avatar_url?: string;
+    clinic_name?: string;
+    is_active: boolean;
+    created_at?: string;
+    updated_at?: string;
+}
+
+// 2. PATIENT (Paciente)
 export interface Patient {
     id: string;
     first_name: string;
     last_name: string;
     document_id: string;
-    email?: string | null;
-    phone?: string | null;
-    date_of_birth?: string | null;
-    address?: string | null;
-    city?: string | null;
-    gender?: 'masculino' | 'femenino' | 'otro' | null;
+    email?: string;
+    phone?: string;
+    date_of_birth?: string;
+    address?: string;
+    city?: string;
+    gender?: 'masculino' | 'femenino' | 'otro';
     debt: number;
     created_at?: string;
     updated_at?: string;
 }
 
+// 3. APPOINTMENT (Cita)
+export interface Appointment {
+    id: string;
+    patient_id: string;
+    doctor_id?: string;
+    date: string;
+    start_time: string;
+    end_time: string;
+    reason: string;
+    status: 'pendiente' | 'confirmada' | 'completada' | 'anulada';
+    type: 'general' | 'ortodoncia';
+    notes?: string;
+    attended: boolean;
+    created_at?: string;
+    updated_at?: string;
+}
+
+// 4. CLINICAL_HISTORY (Historia Clínica)
 export interface ClinicalHistory {
     id: string;
     patient_id: string;
     motivo_consulta?: string;
+    // Patológicos
     hipertension: boolean;
     enfermedad_cardiaca: boolean;
     enfermedad_cardiaca_cual?: string;
@@ -33,39 +72,66 @@ export interface ClinicalHistory {
     otras_enfermedades: boolean;
     otras_enfermedades_cual?: string;
     antecedentes_familiares?: string;
+    // Estomatológicos
     golpes_cara_dientes: boolean;
     ulceras_bucales: boolean;
     sangrado_encias: boolean;
     cepillado_veces_dia?: number;
     ultima_visita_odontologo?: string;
-    doctor_asignado_id?: string;
     created_at?: string;
+    updated_at?: string;
 }
 
-export interface Appointment {
+// 5. ODONTOGRAM (Odontograma)
+export interface Odontogram {
     id: string;
     patient_id: string;
-    doctor_id?: string;
-    start_time: string;
-    end_time: string;
-    reason: string;
-    status: 'pendiente' | 'confirmada' | 'atendido' | 'rechazada' | 'anulada' | 'completada';
-    appointment_type: 'general' | 'ortodoncia';
-    appointment_date: string;
-    appointment_time: string;
+    data: Record<string, any>;
+    notes?: string;
+    updated_by?: string;
+    created_at?: string;
+    updated_at?: string;
 }
 
-export interface OrthoBlock {
+// 6. SCHEDULE (Horario)
+export interface Schedule {
     id: string;
-    date: string;
+    user_id: string;
+    day_of_week: 'monday' | 'tuesday' | 'wednesday' | 'thursday' | 'friday' | 'saturday' | 'sunday';
     start_time: string;
     end_time: string;
-    label?: string;
+    is_enabled: boolean;
+    created_at?: string;
+    updated_at?: string;
 }
 
-export interface User {
+// 7. SERVICE (Servicio)
+export interface Service {
     id: string;
-    email: string;
-    full_name: string;
-    role: 'admin' | 'doctor';
+    user_id: string;
+    name: string;
+    description?: string;
+    price: number;
+    duration: number;
+    is_active: boolean;
+    created_at?: string;
+    updated_at?: string;
+}
+
+// 8. INVOICE (Factura)
+export interface Invoice {
+    id: string;
+    patient_id: string;
+    appointment_id?: string;
+    invoice_number: string;
+    description?: string;
+    amount: number;
+    discount: number;
+    subtotal: number;
+    payment_method?: 'efectivo' | 'tarjeta' | 'transferencia';
+    status: 'pendiente' | 'pagado' | 'cancelado';
+    due_date?: string;
+    paid_at?: string;
+    created_at?: string;
+    updated_at?: string;
 }

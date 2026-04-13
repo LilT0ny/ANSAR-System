@@ -37,3 +37,7 @@ postgres_data/
 
 # Logs
 *.log
+
+# Documentation and Business Logic Context
+Informacion y contexto del sistema/
+

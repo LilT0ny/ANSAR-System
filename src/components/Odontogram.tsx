@@ -1,31 +1,24 @@
 import React, { useState } from 'react';
 import useOdontogramStore from '../store/useOdontogramStore';
+import useConfigStore from '../store/useConfigStore';
 import Tooth from './Tooth';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
-    X, Check, Activity, Trash2, MousePointer, CircleSlash,
+    X, Check, Activity, Trash2, MousePointer,
     Save, RotateCcw, FileText, AlertCircle, CheckCircle
 } from 'lucide-react';
 import clsx from 'clsx';
 
-// Tool definitions
+// Tool definitions - Only RED (todo) and BLUE (done)
 const TOOLS = [
-    { id: 'select', label: 'Seleccionar', icon: MousePointer, color: 'text-blue-500', desc: 'Haz clic para ver detalles del diente' },
-    { id: 'caries', label: 'Caries', icon: Activity, color: 'text-red-500', desc: 'Marca caries en superficies individuales' },
-    { id: 'treated', label: 'Tratado', icon: Check, color: 'text-green-500', desc: 'Marca superficies como tratadas' },
-    { id: 'missing', label: 'Ausente', icon: CircleSlash, color: 'text-gray-600', desc: 'Marca el diente como ausente/extraído' },
-    { id: 'healthy', label: 'Limpiar', icon: Trash2, color: 'text-cyan-500', desc: 'Restaura la superficie a estado sano' },
-];
-
-// Status legend
-const LEGEND = [
-    { label: 'Sano', color: '#FFFFFF', border: '#D1D5DB' },
-    { label: 'Caries', color: '#EF4444', border: '#EF4444' },
-    { label: 'Tratado', color: '#8CC63E', border: '#8CC63E' },
-    { label: 'Ausente', color: '#D1D5DB', border: '#6D6E72' },
+    { id: 'select', label: 'Seleccionar', icon: MousePointer, color: 'text-gray-500', desc: 'Haz clic para ver detalles' },
+    { id: 'todo', label: 'Por Hacer', icon: Activity, color: 'text-red-500', desc: 'Rojo: Tratamiento por realizar' },
+    { id: 'done', label: 'Realizado', icon: Check, color: 'text-blue-500', desc: 'Azul: Tratamiento realizado' },
+    { id: 'clean', label: 'Limpiar', icon: Trash2, color: 'text-gray-400', desc: 'Limpiar estado del diente' },
 ];
 
 const Odontogram = ({ patientId, readOnly = false }) => {
+    const { odontogramColors } = useConfigStore();
     const teeth = useOdontogramStore((state) => state.teeth);
     const selectedTooth = useOdontogramStore((state) => state.selectedTooth);
     const selectTooth = useOdontogramStore((state) => state.selectTooth);
@@ -37,6 +30,12 @@ const Odontogram = ({ patientId, readOnly = false }) => {
     const [showToast, setShowToast] = useState(false);
     const [toastMsg, setToastMsg] = useState('');
     const [localNotes, setLocalNotes] = useState('');
+
+    // Status legend - Only RED (todo) and BLUE (done)
+    const LEGEND = [
+        { label: 'Por Hacer', color: '#EF4444', border: '#EF4444' },
+        { label: 'Realizado', color: '#3B82F6', border: '#3B82F6' },
+    ];
 
     // Standard FDI Notation
     const upperRight = [18, 17, 16, 15, 14, 13, 12, 11];
@@ -80,11 +79,9 @@ const Odontogram = ({ patientId, readOnly = false }) => {
         toast('Odontograma guardado exitosamente.');
     };
 
-    // Count teeth with conditions
-    const teethWithConditions = Object.entries(teeth).filter(([, data]) => data.status !== 'healthy');
-    const cariesCount = Object.values(teeth).filter(t => t.status === 'caries' || Object.values(t.surfaces || {}).some(s => s === 'caries')).length;
-    const treatedCount = Object.values(teeth).filter(t => t.status === 'treated' || Object.values(t.surfaces || {}).some(s => s === 'treated')).length;
-    const missingCount = Object.values(teeth).filter(t => t.status === 'missing').length;
+    // Count teeth with conditions - Only todo (red) and done (blue)
+    const todoCount = Object.values(teeth).filter(t => t.status === 'todo' || Object.values(t.surfaces || {}).some(s => s === 'todo')).length;
+    const doneCount = Object.values(teeth).filter(t => t.status === 'done' || Object.values(t.surfaces || {}).some(s => s === 'done')).length;
 
     const selectedToothState = selectedTooth ? getToothState(selectedTooth) : null;
 
@@ -96,12 +93,10 @@ const Odontogram = ({ patientId, readOnly = false }) => {
 
     const getConditionBadge = (condition) => {
         const styles = {
-            caries: 'bg-red-100 text-red-600 border-red-200',
-            treated: 'bg-green-100 text-green-600 border-green-200',
-            missing: 'bg-gray-100 text-gray-600 border-gray-200',
-            healthy: 'bg-blue-50 text-blue-500 border-blue-200',
+            todo: 'bg-red-100 text-red-600 border-red-200',
+            done: 'bg-blue-100 text-blue-600 border-blue-200',
         };
-        return styles[condition] || styles.healthy;
+        return styles[condition] || 'bg-gray-100 text-gray-500 border-gray-200';
     };
 
     return (
@@ -186,15 +181,11 @@ const Odontogram = ({ patientId, readOnly = false }) => {
                     <div className="flex items-center gap-4 mb-6 text-xs">
                         <span className="flex items-center gap-1.5 text-red-500 font-semibold">
                             <span className="w-2.5 h-2.5 bg-red-500 rounded-full"></span>
-                            Caries: {cariesCount}
+                            Por Hacer: {todoCount}
                         </span>
-                        <span className="flex items-center gap-1.5 text-green-600 font-semibold">
-                            <span className="w-2.5 h-2.5 bg-green-500 rounded-full"></span>
-                            Tratados: {treatedCount}
-                        </span>
-                        <span className="flex items-center gap-1.5 text-gray-500 font-semibold">
-                            <span className="w-2.5 h-2.5 bg-gray-400 rounded-full"></span>
-                            Ausentes: {missingCount}
+                        <span className="flex items-center gap-1.5 text-blue-500 font-semibold">
+                            <span className="w-2.5 h-2.5 bg-blue-500 rounded-full"></span>
+                            Realizado: {doneCount}
                         </span>
                     </div>
                 )}
@@ -297,15 +288,12 @@ const Odontogram = ({ patientId, readOnly = false }) => {
                                     Diente #{selectedTooth}
                                 </h3>
                                 <p className="text-xs text-gray-400 mt-0.5">
-                                    Estado general: <span className={clsx(
-                                        "font-bold capitalize",
-                                        selectedToothState?.status === 'healthy' && 'text-blue-500',
-                                        selectedToothState?.status === 'caries' && 'text-red-500',
-                                        selectedToothState?.status === 'treated' && 'text-green-500',
-                                        selectedToothState?.status === 'missing' && 'text-gray-500',
-                                        selectedToothState?.status === 'custom' && 'text-amber-500',
+                                    Estado: <span className={clsx(
+                                        "font-bold",
+                                        selectedToothState?.status === 'todo' && 'text-red-500',
+                                        selectedToothState?.status === 'done' && 'text-blue-500',
                                     )}>
-                                        {selectedToothState?.status === 'custom' ? 'Mixto' : selectedToothState?.status}
+                                        {selectedToothState?.status === 'todo' ? 'Por Hacer' : selectedToothState?.status === 'done' ? 'Realizado' : 'Sin acción'}
                                     </span>
                                 </p>
                             </div>
@@ -343,17 +331,17 @@ const Odontogram = ({ patientId, readOnly = false }) => {
                                 <div className="flex gap-2 mt-3 pt-3 border-t border-gray-100">
                                     <button
                                         type="button"
-                                        onClick={() => { updateToothStatus(selectedTooth, 'treated'); toast('Diente marcado como tratado.'); }}
-                                        className="flex-1 text-xs bg-green-50 text-green-600 hover:bg-green-100 py-1.5 rounded-lg font-bold transition-colors border border-green-200"
+                                        onClick={() => { updateToothStatus(selectedTooth, 'done'); toast('Diente marcado como Realizado.'); }}
+                                        className="flex-1 text-xs bg-blue-50 text-blue-600 hover:bg-blue-100 py-1.5 rounded-lg font-bold transition-colors border border-blue-200"
                                     >
-                                        ✓ Marcar Tratado
+                                        ✓ Azul (Realizado)
                                     </button>
                                     <button
                                         type="button"
-                                        onClick={() => { updateToothStatus(selectedTooth, 'healthy'); toast('Diente restaurado a sano.'); }}
-                                        className="flex-1 text-xs bg-gray-50 text-gray-500 hover:bg-gray-100 py-1.5 rounded-lg font-bold transition-colors border border-gray-200"
+                                        onClick={() => { updateToothStatus(selectedTooth, 'todo'); toast('Diente marcado como Por Hacer.'); }}
+                                        className="flex-1 text-xs bg-red-50 text-red-600 hover:bg-red-100 py-1.5 rounded-lg font-bold transition-colors border border-red-200"
                                     >
-                                        ↻ Limpiar Todo
+                                        ✕ Rojo (Por Hacer)
                                     </button>
                                 </div>
                             </div>

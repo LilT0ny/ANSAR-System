@@ -164,12 +164,12 @@ const LandingPage = () => {
 };
 
 const ServiceCard = ({ title, desc }) => (
-    <div className="bg-gray-50 p-8 rounded-2xl hover:shadow-lg transition-shadow border border-transparent hover:border-primary/20 group">
-        <div className="w-12 h-12 bg-white rounded-xl shadow-sm flex items-center justify-center text-primary mb-6 group-hover:scale-110 transition-transform">
-            <Star />
+    <div className="bg-gray-50 p-6 rounded-xl hover:shadow-sm transition-shadow">
+        <div className="w-10 h-10 bg-white rounded-lg shadow-sm flex items-center justify-center text-primary mb-4">
+            <Star size={18} />
         </div>
-        <h3 className="text-xl font-bold text-gray-800 mb-3">{title}</h3>
-        <p className="text-gray-600 leading-relaxed">{desc}</p>
+        <h3 className="text-base font-bold text-gray-800 mb-2">{title}</h3>
+        <p className="text-gray-600 text-sm">{desc}</p>
     </div>
 );
 

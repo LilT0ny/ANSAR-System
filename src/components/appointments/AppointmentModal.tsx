@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import { X, CheckCircle } from 'lucide-react';
-import { format } from 'date-fns';
+import { X, CheckCircle, MessageCircle } from 'lucide-react';
+import { format, parseISO } from 'date-fns';
+import { es } from 'date-fns/locale';
 import { appointmentsAPI } from '../../services/api';
 
 const AppointmentModal = ({
@@ -15,11 +16,13 @@ const AppointmentModal = ({
     const [newEvent, setNewEvent] = useState({
         patient: '',
         patientId: null,
+        patientPhone: '',
         date: format(new Date(), 'yyyy-MM-dd'),
         start: '09:00',
         end: '10:00',
         type: 'Consulta General',
         status: 'pendiente',
+        sendWhatsApp: true,
     });
     const [patientSearch, setPatientSearch] = useState('');
     const [showPatientDropdown, setShowPatientDropdown] = useState(false);
@@ -68,6 +71,16 @@ const AppointmentModal = ({
                 status: 'pendiente'
             });
 
+            // Send WhatsApp notification
+            if (newEvent.sendWhatsApp && newEvent.patientPhone) {
+                const phone = newEvent.patientPhone.replace(/\D/g, '');
+                const dateFormatted = format(parseISO(newEvent.date), "d 'de' MMMM", { locale: es });
+                const message = encodeURIComponent(
+                    `Hola ${newEvent.patient.split(' ')[0]}, te informamos que tienes una cita programada el ${dateFormatted} a las ${newEvent.start}. Por favor arrives 10 minutos antes. ¡Te esperamos!`
+                );
+                window.open(`https://wa.me/${phone}?text=${message}`, '_blank');
+            }
+
             onSuccess();
             toast('Cita programada con éxito');
             onClose();
@@ -109,7 +122,7 @@ const AppointmentModal = ({
                                         <button
                                             key={p.id}
                                             onClick={() => {
-                                                setNewEvent(prev => ({ ...prev, patient: p.name, patientId: p.id }));
+                                                setNewEvent(prev => ({ ...prev, patient: p.name, patientId: p.id, patientPhone: p.phone || '' }));
                                                 setShowPatientDropdown(false);
                                             }}
                                             className="w-full text-left px-4 py-2 hover:bg-primary/5 border-b border-gray-50 last:border-0 text-sm"
@@ -146,6 +159,16 @@ const AppointmentModal = ({
                             </select>
                         </div>
                     </div>
+                    <label className="flex items-center gap-2 text-sm text-gray-600 mt-3">
+                        <input
+                            type="checkbox"
+                            checked={newEvent.sendWhatsApp}
+                            onChange={(e) => setNewEvent({ ...newEvent, sendWhatsApp: e.target.checked })}
+                            className="w-4 h-4 rounded border-gray-300 text-primary focus:ring-primary"
+                        />
+                        <MessageCircle size={16} className="text-green-500" />
+                        Enviar Recordatorio por WhatsApp
+                    </label>
                     <button
                         onClick={handleCreateEvent}
                         className="w-full bg-primary hover:bg-green-600 text-white py-3 rounded-xl font-bold mt-4 shadow-lg transition-colors"
