@@ -1,6 +1,9 @@
 import { useEffect, useState } from 'react';
 import { Camera, Save, Building, Clock, User, Phone, Mail, MapPin, Plus, Trash2, CheckCircle, Palette, Stethoscope } from 'lucide-react';
 import useConfigStore from '../store/useConfigStore';
+import { SectionHeader } from '../components/molecules/SectionHeader';
+import { PageHeader } from '../components/molecules/PageHeader';
+import { gradients, iconColors } from '../constants/colors';
 
 const Settings = () => {
   const { 
@@ -96,18 +99,18 @@ const Settings = () => {
 
   return (
     <div className="space-y-6">
-      <header className="flex items-center justify-between mb-2">
-        <div>
-          <h1 className="text-3xl font-bold text-gray-800">Configuración</h1>
-          <p className="text-gray-500 mt-1">Personaliza tu clínica dental</p>
-        </div>
-        <button 
-          onClick={handleSave} 
-          className="bg-primary hover:bg-green-600 text-white px-6 py-3 rounded-xl font-bold flex items-center justify-center gap-2 shadow-lg hover:shadow-xl transition-all"
-        >
-          <Save size={18} /> Guardar
-        </button>
-      </header>
+      <PageHeader 
+        title="Configuración"
+        subtitle="Personaliza tu clínica dental"
+        action={
+          <button 
+            onClick={handleSave} 
+            className="bg-primary hover:bg-green-600 text-white px-6 py-3 rounded-xl font-bold flex items-center justify-center gap-2 shadow-lg hover:shadow-xl transition-all"
+          >
+            <Save size={18} /> Guardar
+          </button>
+        }
+      />
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         
@@ -116,12 +119,13 @@ const Settings = () => {
           
           {/* Clinic Info */}
           <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
-            <div className="bg-gradient-to-r from-primary/10 to-primary/5 px-6 py-4 border-b border-gray-100">
-              <h2 className="text-lg font-bold text-gray-800 flex items-center gap-2">
-                <Building className="text-primary" size={20} />
-                Clínica
-              </h2>
-            </div>
+            <SectionHeader 
+              title="Clínica"
+              icon={Building}
+              iconColor={iconColors.clinic}
+              gradientFrom={gradients.clinic.split(' ')[0]}
+              gradientTo={gradients.clinic.split(' ')[1]}
+            />
             <div className="p-6 space-y-5">
               <div>
                 <label className="block text-sm font-semibold text-gray-600 mb-2">Nombre de la Clínica</label>
@@ -185,8 +189,62 @@ const Settings = () => {
             </div>
           </div>
 
- 
+          {/* Doctor Info */}
+          <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
+            <SectionHeader 
+              title="Doctor/a"
+              icon={User}
+              iconColor={iconColors.doctor}
+              gradientFrom={gradients.doctor.split(' ')[0]}
+              gradientTo={gradients.doctor.split(' ')[1]}
+            />
+            <div className="p-6 space-y-5">
+              <div>
+                <label className="block text-sm font-semibold text-gray-600 mb-2">Nombre del Doctor/a</label>
+                <input 
+                  value={localConfig.doctorName} 
+                  onChange={(e) => setLocalConfig({...localConfig, doctorName: e.target.value})}
+                  className="w-full border border-gray-200 rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none"
+                  placeholder="Nombre completo"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-semibold text-gray-600 mb-2">Especialidad</label>
+                <input 
+                  value={localConfig.specialty} 
+                  onChange={(e) => setLocalConfig({...localConfig, specialty: e.target.value})}
+                  className="w-full border border-gray-200 rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none"
+                  placeholder="Ej: Odontología General, Ortodoncia"
+                />
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-semibold text-gray-600 mb-2 flex items-center gap-1">
+                    <Phone size={16} /> Teléfono
+                  </label>
+                  <input 
+                    value={localConfig.phone} 
+                    onChange={(e) => setLocalConfig({...localConfig, phone: e.target.value})}
+                    className="w-full border border-gray-200 rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none"
+                    placeholder="+1 234 5678"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-semibold text-gray-600 mb-2 flex items-center gap-1">
+                    <Mail size={16} /> Email
+                  </label>
+                  <input 
+                    value={localConfig.email} 
+                    onChange={(e) => setLocalConfig({...localConfig, email: e.target.value})}
+                    className="w-full border border-gray-200 rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none"
+                    placeholder="correo@ejemplo.com"
+                  />
+                </div>
+              </div>
+            </div>
+          </div>
 
+ 
         </div>
 
         {/* Right Column */}
@@ -194,12 +252,13 @@ const Settings = () => {
           
           {/* Services */}
           <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
-            <div className="bg-gradient-to-r from-green-50 to-green-50/50 px-6 py-4 border-b border-gray-100">
-              <h2 className="text-lg font-bold text-gray-800 flex items-center gap-2">
-                <Stethoscope className="text-green-500" size={20} />
-                Servicios
-              </h2>
-            </div>
+            <SectionHeader 
+              title="Servicios"
+              icon={Stethoscope}
+              iconColor={iconColors.services}
+              gradientFrom={gradients.services.split(' ')[0]}
+              gradientTo={gradients.services.split(' ')[1]}
+            />
             <div className="p-5">
               <div className="space-y-2">
                 {localServices.map(service => (
@@ -242,12 +301,13 @@ const Settings = () => {
 
           {/* Schedule */}
           <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
-            <div className="bg-gradient-to-r from-purple-50 to-purple-50/50 px-6 py-4 border-b border-gray-100">
-              <h2 className="text-lg font-bold text-gray-800 flex items-center gap-2">
-                <Clock className="text-purple-500" size={20} />
-                Horarios
-              </h2>
-            </div>
+            <SectionHeader 
+              title="Horarios"
+              icon={Clock}
+              iconColor={iconColors.schedule}
+              gradientFrom={gradients.schedule.split(' ')[0]}
+              gradientTo={gradients.schedule.split(' ')[1]}
+            />
             <div className="p-4">
               <div className="space-y-2">
                 {Object.entries(localSchedule).map(([day, config]) => (

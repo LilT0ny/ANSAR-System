@@ -5,6 +5,7 @@ import { useNavigate } from 'react-router-dom';
 import clsx from 'clsx';
 import { patientsAPI } from '../services/api';
 import { Patient } from '../types';
+import { PageHeader } from '../components/molecules/PageHeader';
 
 const Patients = () => {
     const navigate = useNavigate();
@@ -115,28 +116,28 @@ const Patients = () => {
 
     return (
         <div className="space-y-6">
-            <header className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-                <div>
-                    <h1 className="text-2xl md:text-3xl font-serif font-bold text-gray-800">Gestión de Pacientes</h1>
-                    <p className="text-secondary mt-1 text-sm md:text-base">Administra la base de datos de pacientes de la clínica.</p>
-                </div>
-                <div className="flex items-center space-x-2 w-full sm:w-auto">
-                    <button
-                        onClick={fetchPatients}
-                        className="text-gray-500 hover:text-primary p-2 rounded-lg hover:bg-gray-100 transition-colors cursor-pointer"
-                        title="Refrescar"
-                    >
-                        <RefreshCw size={20} className={loading ? 'animate-spin' : ''} />
-                    </button>
-                    <button
-                        onClick={() => setShowForm(true)}
-                        className="flex-1 sm:flex-none justify-center bg-primary font-bold hover:bg-green-600 text-white px-4 py-2.5 rounded-xl flex items-center space-x-2 transition-colors shadow-sm cursor-pointer text-sm"
-                    >
-                        <Plus size={20} />
-                        <span>Nuevo Paciente</span>
-                    </button>
-                </div>
-            </header>
+            <PageHeader 
+                title="Gestión de Pacientes"
+                subtitle="Administra la base de datos de pacientes de la clínica."
+                action={
+                    <div className="flex items-center space-x-2 w-full sm:w-auto">
+                        <button
+                            onClick={fetchPatients}
+                            className="text-gray-500 hover:text-primary p-2 rounded-lg hover:bg-gray-100 transition-colors cursor-pointer"
+                            title="Refrescar"
+                        >
+                            <RefreshCw size={20} className={loading ? 'animate-spin' : ''} />
+                        </button>
+                        <button
+                            onClick={() => setShowForm(true)}
+                            className="flex-1 sm:flex-none justify-center bg-primary font-bold hover:bg-green-600 text-white px-4 py-2.5 rounded-xl flex items-center space-x-2 transition-colors shadow-sm cursor-pointer text-sm"
+                        >
+                            <Plus size={20} />
+                            <span>Nuevo Paciente</span>
+                        </button>
+                    </div>
+                }
+            />
 
             {/* Error Banner */}
             {error && (

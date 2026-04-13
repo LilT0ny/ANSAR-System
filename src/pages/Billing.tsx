@@ -2,12 +2,13 @@ import React, { useState, useMemo, useEffect, useCallback } from 'react';
 import {
     Search, Plus, Trash2, Eye, Download, FileText, CreditCard, Banknote,
     ArrowRight, CheckCircle, X, Percent, DollarSign, User, ClipboardList,
-    ChevronDown, Package, Mail, AlertCircle, Loader2
+    ChevronDown, Package, Mail, AlertCircle, Loader2, Receipt
 } from 'lucide-react';
 import jsPDF from 'jspdf';
 import 'jspdf-autotable';
 import { patientsAPI, notificationsAPI } from '../services/api';
 import { generateInvoicePDF } from '../utils/pdfGenerator';
+import { PageHeader } from '../components/molecules/PageHeader';
 
 // Patients will be loaded from API
 
@@ -210,10 +211,10 @@ const Billing = () => {
     return (
         <div className="space-y-8">
             {/* Header */}
-            <header className="animate-in fade-in slide-in-from-left-4 duration-500">
-                <h1 className="text-2xl md:text-3xl font-serif font-bold text-gray-800">Facturación</h1>
-                <p className="text-secondary mt-1 text-sm md:text-base">Genera facturas, aplica descuentos y descarga en PDF.</p>
-            </header>
+            <PageHeader 
+                title="Facturación"
+                subtitle="Genera facturas, aplica descuentos y descarga en PDF."
+            />
 
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
 

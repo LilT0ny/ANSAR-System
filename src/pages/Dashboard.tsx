@@ -4,6 +4,7 @@ import { Activity, Users, Calendar, DollarSign, ChevronRight, TrendingUp } from 
 import { usePatients, useAppointments } from '../hooks';
 import { useInvoices } from '../hooks/useInvoices';
 import { Spinner } from '../components/atoms';
+import { PageHeader } from '../components/molecules/PageHeader';
 
 const Dashboard = () => {
   const navigate = useNavigate();
@@ -69,14 +70,10 @@ const Dashboard = () => {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <header>
-        <h1 className="text-2xl md:text-3xl font-bold text-gray-800">
-          Hola, {userName}
-        </h1>
-        <p className="text-gray-500 text-sm mt-1">
-          Tienes <span className="font-semibold text-primary">{totalPatients}</span> paciente{totalPatients !== 1 ? 's' : ''} registrado{totalPatients !== 1 ? 's' : ''}
-        </p>
-      </header>
+      <PageHeader 
+        title={`Hola, ${userName}`}
+        subtitle={`Tienes ${totalPatients} paciente${totalPatients !== 1 ? 's' : ''} registrado${totalPatients !== 1 ? 's' : ''}`}
+      />
 
       {/* KPIs Grid - Minimalista */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 md:gap-4">

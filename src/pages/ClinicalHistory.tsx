@@ -13,6 +13,7 @@ import { patientsAPI } from '../services/api';
 import generateClinicalHistoryPDF from '../utils/clinicalHistoryPDF';
 import generateFormPDF from '../utils/formPDF';
 import generateCertificatePDF from '../utils/certificatePDF';
+import { PageHeader } from '../components/molecules/PageHeader';
 
 // ── Age calculation helper ────────────────────────────────────
 const calculateAge = (birthDate) => {
@@ -92,10 +93,10 @@ const PatientSelectionScreen = ({ navigate }) => {
     return (
         <div className="space-y-4 md:space-y-6 animate-in fade-in duration-300">
             {/* Header */}
-            <div>
-                <h1 className="text-2xl md:text-3xl font-bold text-gray-800">Historia Clínica</h1>
-                <p className="text-gray-500 text-sm mt-1">Selecciona un paciente</p>
-            </div>
+            <PageHeader 
+                title="Historia Clínica"
+                subtitle="Selecciona un paciente"
+            />
 
             {/* Selection Card */}
             <div className="bg-white rounded-xl shadow-sm overflow-hidden">
