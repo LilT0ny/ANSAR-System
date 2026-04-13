@@ -317,35 +317,36 @@ const Appointments = () => {
     }
 
     return (
-        <div className="space-y-6">
-            <header className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div className="space-y-4 md:space-y-6">
+            {/* Header */}
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                 <div className="flex-1">
-                    <h1 className="text-2xl md:text-3xl font-serif font-bold text-gray-800">Agenda de Citas</h1>
-                    <p className="text-secondary mt-1 text-sm md:text-base">Administra las citas y horarios de la clínica.</p>
+                    <h1 className="text-2xl md:text-3xl font-bold text-gray-800">Citas</h1>
+                    <p className="text-gray-500 text-sm mt-1">Administra tu agenda</p>
                 </div>
-                <div className="flex flex-wrap items-center gap-2">
+                <div className="flex items-center gap-2">
                     <button
                         type="button"
                         onClick={() => setShowOrthoPanel(!showOrthoPanel)}
-                        className="flex-1 sm:flex-none px-3 md:px-4 py-2 md:py-2.5 rounded-xl font-bold flex items-center justify-center gap-2 text-xs md:text-sm transition-all border-2"
+                        className="px-3 md:px-4 py-2 md:py-2.5 rounded-xl font-bold flex items-center gap-2 text-xs md:text-sm border-2 transition-all"
                         style={showOrthoPanel
-                            ? { backgroundColor: '#8CC63E', color: '#fff', borderColor: '#8CC63E', boxShadow: '0 4px 14px rgba(140,198,62,0.35)' }
+                            ? { backgroundColor: '#8CC63E', color: '#fff', borderColor: '#8CC63E' }
                             : { color: '#6aad2d', borderColor: 'rgba(140,198,62,0.4)', backgroundColor: 'transparent' }
                         }
                     >
                         <ShieldCheck size={16} />
-                        Ortodoncia
+                        <span className="hidden sm:inline">Ortodoncia</span>
                     </button>
                     <button
                         type="button"
                         onClick={() => setShowCreateModal(true)}
-                        className="flex-1 sm:flex-none bg-primary hover:bg-green-600 text-white px-3 md:px-5 py-2 md:py-2.5 rounded-xl font-bold flex items-center justify-center gap-2 text-xs md:text-sm transition-all shadow-md hover:shadow-lg"
+                        className="flex-1 sm:flex-none bg-primary hover:bg-green-600 text-white px-3 md:px-5 py-2 md:py-2.5 rounded-xl font-bold flex items-center justify-center gap-2 text-xs md:text-sm transition-all shadow-md"
                     >
                         <Plus size={18} />
                         Nueva Cita
                     </button>
                 </div>
-            </header>
+            </div>
 
             {showOrthoPanel && (
                 <div className="rounded-2xl p-4 md:p-6 animate-in fade-in slide-in-from-top-2 duration-300 mb-6" style={{ backgroundColor: 'rgba(140,198,62,0.04)', border: '2px solid rgba(140,198,62,0.2)' }}>

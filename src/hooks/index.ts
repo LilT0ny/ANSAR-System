@@ -2,3 +2,4 @@
 export { usePatients } from './usePatients';
 export { useAuth } from './useAuth';
 export { useAppointments } from './useAppointments';
+export { useInvoices } from './useInvoices';

@@ -1,113 +1,302 @@
-import React, { useState } from 'react';
-import { Camera, Upload } from 'lucide-react';
+import { useEffect, useState } from 'react';
+import { Camera, Save, Building, Clock, User, Phone, Mail, MapPin, Plus, Trash2, CheckCircle, Palette, Stethoscope } from 'lucide-react';
+import useConfigStore from '../store/useConfigStore';
 
 const Settings = () => {
-    const [clinicName, setClinicName] = useState('Clínica Dental AN-SAR');
-    const [email, setEmail] = useState('contacto@ansar.com');
-    const [profileImage, setProfileImage] = useState('https://images.unsplash.com/photo-1559839734-2b71ea197ec2?auto=format&fit=crop&q=80&w=200');
-    const [doctorName, setDoctorName] = useState('Dra. Ansar');
-    const [specialty, setSpecialty] = useState('Odontología General');
+  const { 
+    clinicName, logoUrl, primaryColor, secondaryColor,
+    doctorName, specialty, email, phone, address, services, schedule,
+    updateConfig 
+  } = useConfigStore();
 
-    const handleImageChange = (e) => {
-        const file = e.target.files[0];
-        if (file) {
-            const reader = new FileReader();
-            reader.onloadend = () => {
-                setProfileImage(reader.result);
-            };
-            reader.readAsDataURL(file);
-        }
-    };
+  const [localConfig, setLocalConfig] = useState({
+    clinicName, logoUrl, primaryColor, secondaryColor,
+    doctorName, specialty, email, phone, address,
+  });
 
-    return (
-        <div className="space-y-8">
-            {/* Standard Header */}
-            <header className="animate-in fade-in slide-in-from-left-4 duration-500">
-                <h1 className="text-2xl md:text-3xl font-serif font-bold text-gray-800">Configuración</h1>
-                <p className="text-secondary mt-1 text-sm md:text-base">Ajustes generales del sistema.</p>
-            </header>
+  const [localServices, setLocalServices] = useState(services);
+  const [localSchedule, setLocalSchedule] = useState(schedule);
+  const [showToast, setShowToast] = useState(false);
 
-            {/* Profile Photo Section */}
-            <div className="bg-white p-5 md:p-6 rounded-2xl shadow-sm border border-gray-100 max-w-2xl">
-                <h3 className="text-base md:text-lg font-serif font-bold text-gray-800 mb-6">Perfil del Doctor</h3>
-                <div className="flex flex-col sm:flex-row items-start gap-6">
-                    {/* Photo */}
-                    <div className="relative group">
-                        <div className="h-28 w-28 rounded-2xl overflow-hidden shadow-md border-2 border-gray-100 bg-gray-200">
-                            <img
-                                src={profileImage}
-                                alt="Profile"
-                                className="w-full h-full object-cover"
-                            />
-                        </div>
-                        <label
-                            htmlFor="profile-upload"
-                            className="absolute inset-0 bg-black/40 rounded-2xl flex items-center justify-center cursor-pointer opacity-0 group-hover:opacity-100 transition-opacity duration-200"
-                        >
-                            <Camera size={24} className="text-white" />
-                        </label>
-                        <input
-                            id="profile-upload"
-                            type="file"
-                            accept="image/*"
-                            className="hidden"
-                            onChange={handleImageChange}
-                        />
-                    </div>
+  useEffect(() => {
+    applyTheme(localConfig.primaryColor);
+  }, [localConfig.primaryColor]);
 
-                    {/* Info fields */}
-                    <div className="flex-1 space-y-4 w-full">
-                        <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-1">Nombre del Doctor</label>
-                            <input
-                                value={doctorName}
-                                onChange={(e) => setDoctorName(e.target.value)}
-                                className="w-full border border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-primary outline-none"
-                            />
-                        </div>
-                        <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-1">Especialidad</label>
-                            <input
-                                value={specialty}
-                                onChange={(e) => setSpecialty(e.target.value)}
-                                className="w-full border border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-primary outline-none"
-                            />
-                        </div>
-                        <button className="flex items-center gap-2 text-sm text-primary font-medium hover:underline mt-2">
-                            <Upload size={16} />
-                            Cambiar foto de perfil
-                        </button>
-                    </div>
-                </div>
-            </div>
+  const applyTheme = (color) => {
+    document.documentElement.style.setProperty('--primary', color);
+    document.documentElement.style.setProperty('--primary-hover', adjustColor(color, -20));
+    document.documentElement.style.setProperty('--primary-light', color + '15');
+  };
 
-            {/* Clinic Info Section */}
-            <div className="bg-white p-5 md:p-6 rounded-2xl shadow-sm border border-gray-100 max-w-2xl">
-                <h3 className="text-base md:text-lg font-serif font-bold text-gray-800 mb-4">Información de la Clínica</h3>
-                <div className="space-y-4">
-                    <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">Nombre de la Clínica</label>
-                        <input
-                            value={clinicName}
-                            onChange={(e) => setClinicName(e.target.value)}
-                            className="w-full border border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-primary outline-none"
-                        />
-                    </div>
-                    <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">Email de Contacto</label>
-                        <input
-                            value={email}
-                            onChange={(e) => setEmail(e.target.value)}
-                            className="w-full border border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-primary outline-none"
-                        />
-                    </div>
-                    <button className="bg-primary text-white px-6 py-2 rounded-lg font-medium hover:bg-green-600 transition-colors">
-                        Guardar Cambios
-                    </button>
-                </div>
-            </div>
+  const adjustColor = (color, amount) => {
+    const hex = color.replace('#', '');
+    const r = Math.max(0, Math.min(255, parseInt(hex.substr(0, 2), 16) + amount));
+    const g = Math.max(0, Math.min(255, parseInt(hex.substr(2, 2), 16) + amount));
+    const b = Math.max(0, Math.min(255, parseInt(hex.substr(4, 2), 16) + amount));
+    return `#${r.toString(16).padStart(2, '0')}${g.toString(16).padStart(2, '0')}${b.toString(16).padStart(2, '0')}`;
+  };
+
+  const handleSave = () => {
+    updateConfig({
+      ...localConfig,
+      services: localServices,
+      schedule: localSchedule,
+    });
+    setShowToast(true);
+    setTimeout(() => setShowToast(false), 3000);
+  };
+
+  const handleImageChange = (e, field) => {
+    const file = e.target.files[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setLocalConfig({ ...localConfig, [field]: reader.result });
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  const addService = () => {
+    const newId = Math.max(...localServices.map(s => s.id), 0) + 1;
+    setLocalServices([...localServices, { id: newId, name: '', price: '$0', duration: '30 min' }]);
+  };
+
+  const removeService = (id) => {
+    setLocalServices(localServices.filter(s => s.id !== id));
+  };
+
+  const updateService = (id, field, value) => {
+    setLocalServices(localServices.map(s => s.id === id ? { ...s, [field]: value } : s));
+  };
+
+  const toggleDay = (day) => {
+    setLocalSchedule({
+      ...localSchedule,
+      [day]: { ...localSchedule[day], enabled: !localSchedule[day].enabled }
+    });
+  };
+
+  const updateSchedule = (day, field, value) => {
+    setLocalSchedule({
+      ...localSchedule,
+      [day]: { ...localSchedule[day], [field]: value }
+    });
+  };
+
+  const dayLabels: Record<string, string> = {
+    monday: 'Lunes',
+    tuesday: 'Martes',
+    wednesday: 'Miércoles',
+    thursday: 'Jueves',
+    friday: 'Viernes',
+    saturday: 'Sábado',
+    sunday: 'Domingo',
+  };
+
+  return (
+    <div className="space-y-6">
+      <header className="flex items-center justify-between mb-2">
+        <div>
+          <h1 className="text-3xl font-bold text-gray-800">Configuración</h1>
+          <p className="text-gray-500 mt-1">Personaliza tu clínica dental</p>
         </div>
-    );
+        <button 
+          onClick={handleSave} 
+          className="bg-primary hover:bg-green-600 text-white px-6 py-3 rounded-xl font-bold flex items-center justify-center gap-2 shadow-lg hover:shadow-xl transition-all"
+        >
+          <Save size={18} /> Guardar
+        </button>
+      </header>
+
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        
+        {/* Left Column */}
+        <div className="space-y-6">
+          
+          {/* Clinic Info */}
+          <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
+            <div className="bg-gradient-to-r from-primary/10 to-primary/5 px-6 py-4 border-b border-gray-100">
+              <h2 className="text-lg font-bold text-gray-800 flex items-center gap-2">
+                <Building className="text-primary" size={20} />
+                Clínica
+              </h2>
+            </div>
+            <div className="p-6 space-y-5">
+              <div>
+                <label className="block text-sm font-semibold text-gray-600 mb-2">Nombre de la Clínica</label>
+                <input 
+                  value={localConfig.clinicName} 
+                  onChange={(e) => setLocalConfig({...localConfig, clinicName: e.target.value})}
+                  className="w-full border border-gray-200 rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none"
+                  placeholder="Nombre de tu clínica"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-semibold text-gray-600 mb-2">Dirección</label>
+                <input 
+                  value={localConfig.address} 
+                  onChange={(e) => setLocalConfig({...localConfig, address: e.target.value})}
+                  className="w-full border border-gray-200 rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none"
+                  placeholder="Dirección completa"
+                />
+              </div>
+              <div className="flex items-center gap-6">
+                <div>
+                  <label className="block text-sm font-semibold text-gray-600 mb-2">Logo</label>
+                  <div className="flex items-center gap-3">
+                    <div className="relative h-14 w-14 rounded-xl overflow-hidden bg-gray-50 border-2 border-dashed border-gray-200 hover:border-primary transition-colors group">
+                      {localConfig.logoUrl ? (
+                        <img src={localConfig.logoUrl} alt="Logo" className="w-full h-full object-cover" />
+                      ) : (
+                        <div className="w-full h-full flex items-center justify-center text-gray-300">
+                          <Building size={20} />
+                        </div>
+                      )}
+                      <label htmlFor="logo-upload" className="absolute inset-0 bg-black/50 flex items-center justify-center cursor-pointer opacity-0 group-hover:opacity-100 transition-opacity">
+                        <Camera size={16} className="text-white" />
+                      </label>
+                      <input 
+                        id="logo-upload" 
+                        type="file" 
+                        accept="image/*" 
+                        className="hidden" 
+                        onChange={(e) => handleImageChange(e, 'logoUrl')} 
+                      />
+                    </div>
+                    <span className="text-xs text-gray-400">200×200</span>
+                  </div>
+                </div>
+                <div>
+                  <label className="block text-sm font-semibold text-gray-600 mb-2">Color</label>
+                  <div className="flex items-center gap-2">
+                    <input 
+                      type="color" 
+                      value={localConfig.primaryColor}
+                      onChange={(e) => setLocalConfig({...localConfig, primaryColor: e.target.value})}
+                      className="w-10 h-10 rounded-xl cursor-pointer shadow-sm" 
+                    />
+                    <span className="text-xs font-mono text-gray-500 bg-gray-50 px-2 py-1 rounded-lg">
+                      {localConfig.primaryColor}
+                    </span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+ 
+
+        </div>
+
+        {/* Right Column */}
+        <div className="space-y-6">
+          
+          {/* Services */}
+          <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
+            <div className="bg-gradient-to-r from-green-50 to-green-50/50 px-6 py-4 border-b border-gray-100">
+              <h2 className="text-lg font-bold text-gray-800 flex items-center gap-2">
+                <Stethoscope className="text-green-500" size={20} />
+                Servicios
+              </h2>
+            </div>
+            <div className="p-5">
+              <div className="space-y-2">
+                {localServices.map(service => (
+                  <div key={service.id} className="flex items-center gap-2 p-2 bg-gray-50 rounded-lg">
+                    <input 
+                      value={service.name} 
+                      onChange={(e) => updateService(service.id, 'name', e.target.value)}
+                      placeholder="Servicio"
+                      className="flex-1 bg-transparent text-sm"
+                    />
+                    <input 
+                      value={service.price} 
+                      onChange={(e) => updateService(service.id, 'price', e.target.value)}
+                      placeholder="$0"
+                      className="w-16 bg-transparent text-sm text-center"
+                    />
+                    <input 
+                      value={service.duration} 
+                      onChange={(e) => updateService(service.id, 'duration', e.target.value)}
+                      placeholder="30m"
+                      className="w-14 bg-transparent text-sm text-center"
+                    />
+                    <button 
+                      onClick={() => removeService(service.id)} 
+                      className="text-gray-400 hover:text-red-500"
+                    >
+                      <Trash2 size={14} />
+                    </button>
+                  </div>
+                ))}
+                <button 
+                  onClick={addService} 
+                  className="w-full py-2 border border-dashed border-gray-200 rounded-lg text-gray-400 hover:border-primary hover:text-primary text-sm transition-colors flex items-center justify-center gap-1"
+                >
+                  <Plus size={14} /> Agregar
+                </button>
+              </div>
+            </div>
+          </div>
+
+          {/* Schedule */}
+          <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
+            <div className="bg-gradient-to-r from-purple-50 to-purple-50/50 px-6 py-4 border-b border-gray-100">
+              <h2 className="text-lg font-bold text-gray-800 flex items-center gap-2">
+                <Clock className="text-purple-500" size={20} />
+                Horarios
+              </h2>
+            </div>
+            <div className="p-4">
+              <div className="space-y-2">
+                {Object.entries(localSchedule).map(([day, config]) => (
+                  <div 
+                    key={day} 
+                    className={`flex items-center gap-2 p-2 rounded-lg ${config.enabled ? 'bg-purple-50' : 'bg-gray-50 opacity-50'}`}
+                  >
+                    <button 
+                      onClick={() => toggleDay(day)}
+                      className={`w-14 py-1.5 rounded-md text-xs font-bold ${config.enabled 
+                        ? 'bg-primary text-white' 
+                        : 'bg-gray-200 text-gray-400'}`}
+                    >
+                      {config.enabled ? 'ON' : 'OFF'}
+                    </button>
+                    <span className="w-20 text-xs font-medium text-gray-600">{dayLabels[day]}</span>
+                    <input 
+                      type="time" 
+                      value={config.open} 
+                      onChange={(e) => updateSchedule(day, 'open', e.target.value)}
+                      disabled={!config.enabled}
+                      className="flex-1 text-xs py-1" 
+                    />
+                    <span className="text-gray-300">→</span>
+                    <input 
+                      type="time" 
+                      value={config.close} 
+                      onChange={(e) => updateSchedule(day, 'close', e.target.value)}
+                      disabled={!config.enabled}
+                      className="flex-1 text-xs py-1" 
+                    />
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+
+        </div>
+
+      </div>
+
+      {showToast && (
+        <div className="fixed bottom-8 right-8 bg-gray-800 text-white px-6 py-3 rounded-xl shadow-lg flex items-center gap-3 z-50 animate-in slide-in-from-bottom-4">
+          <CheckCircle className="text-green-400" size={20} />
+          <span>Guardado correctamente</span>
+        </div>
+      )}
+    </div>
+  );
 };
 
 export default Settings;

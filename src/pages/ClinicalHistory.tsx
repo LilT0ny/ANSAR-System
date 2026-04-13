@@ -5,11 +5,14 @@ import clsx from 'clsx';
 import {
     User, FileText, Activity, Layers, Edit2, Save, X, ArrowLeft,
     CheckCircle, AlertCircle, Calendar, Phone, Mail, MapPin, Briefcase,
-    Loader2, Search, Users
+    Loader2, Search, Users, Download
 } from 'lucide-react';
 import Odontogram from '../components/Odontogram';
 import OrthodonticGallery from '../components/OrthodonticGallery';
 import { patientsAPI } from '../services/api';
+import generateClinicalHistoryPDF from '../utils/clinicalHistoryPDF';
+import generateFormPDF from '../utils/formPDF';
+import generateCertificatePDF from '../utils/certificatePDF';
 
 // ── Age calculation helper ────────────────────────────────────
 const calculateAge = (birthDate) => {
@@ -87,72 +90,69 @@ const PatientSelectionScreen = ({ navigate }) => {
     }, [searchTerm, patients]);
 
     return (
-        <div className="space-y-8 animate-in fade-in duration-300">
+        <div className="space-y-4 md:space-y-6 animate-in fade-in duration-300">
             {/* Header */}
             <div>
-                <h1 className="text-2xl md:text-3xl font-serif font-bold text-gray-800">Historia Clínica</h1>
-                <p className="text-gray-500 mt-1 text-sm md:text-base">Seleccione un paciente para ver o editar su historia clínica</p>
+                <h1 className="text-2xl md:text-3xl font-bold text-gray-800">Historia Clínica</h1>
+                <p className="text-gray-500 text-sm mt-1">Selecciona un paciente</p>
             </div>
 
             {/* Selection Card */}
-            <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
+            <div className="bg-white rounded-xl shadow-sm overflow-hidden">
 
                 {/* Info Banner */}
-                <div className="bg-gradient-to-r from-primary/5 to-emerald-50 px-4 md:px-8 py-4 md:py-6 border-b border-gray-100">
-                    <div className="flex items-center gap-3 md:gap-4">
-                        <div className="h-10 w-10 md:h-14 md:w-14 rounded-xl md:rounded-2xl bg-primary/10 flex items-center justify-center shrink-0">
-                            <Users className="text-primary" size={20} />
+                <div className="bg-primary/5 px-4 md:px-6 py-4 border-b border-gray-100">
+                    <div className="flex items-center gap-3">
+                        <div className="h-10 w-10 rounded-lg bg-primary/10 flex items-center justify-center">
+                            <Users className="text-primary" size={18} />
                         </div>
                         <div>
-                            <h2 className="text-base md:text-lg font-bold text-gray-800 font-serif">Buscar Paciente</h2>
-                            <p className="text-xs md:text-sm text-gray-500">
-                                Busque por nombre, cédula o teléfono para acceder.
-                            </p>
+                            <h2 className="text-base font-bold text-gray-800">Buscar Paciente</h2>
+                            <p className="text-xs text-gray-500">Por nombre, cédula o teléfono</p>
                         </div>
                     </div>
                 </div>
 
                 {/* Search Input */}
-                <div className="px-4 md:px-8 py-4 md:py-5 border-b border-gray-100">
-                    <div className="relative w-full max-w-xl">
-                        <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" size={18} />
+                <div className="p-4 border-b border-gray-100">
+                    <div className="relative">
+                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={16} />
                         <input
                             type="text"
-                            placeholder="Nombre, cédula o teléfono..."
+                            placeholder="Buscar..."
                             value={searchTerm}
                             onChange={(e) => setSearchTerm(e.target.value)}
                             autoFocus
-                            className="w-full pl-11 pr-4 py-2.5 md:py-3 border border-gray-200 rounded-xl bg-gray-50 focus:bg-white focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none transition-all text-sm"
+                            className="w-full pl-10 pr-4 py-3 border border-gray-200 rounded-lg bg-gray-50 focus:bg-white focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none text-sm"
                         />
                     </div>
                 </div>
 
                 {/* Patient List */}
-                <div className="px-4 md:px-8 py-2 md:py-4">
+                <div className="p-2">
                     {loading ? (
-                        <div className="flex items-center justify-center py-12">
-                            <Loader2 className="animate-spin text-primary mr-3" size={22} />
-                            <span className="text-gray-500 text-sm font-medium">Cargando pacientes...</span>
+                        <div className="flex items-center justify-center py-8">
+                            <Loader2 className="animate-spin text-primary mr-2" size={18} />
+                            <span className="text-gray-500 text-sm">Cargando...</span>
                         </div>
                     ) : error ? (
-                        <div className="text-center py-12">
-                            <AlertCircle className="mx-auto text-red-400 mb-3" size={32} />
-                            <p className="text-gray-600 font-medium text-sm">{error}</p>
+                        <div className="text-center py-8">
+                            <AlertCircle className="mx-auto text-red-400 mb-2" size={24} />
+                            <p className="text-gray-600 text-sm">{error}</p>
                         </div>
                     ) : filteredPatients.length === 0 ? (
-                        <div className="text-center py-12">
-                            <Search className="mx-auto text-gray-300 mb-3" size={32} />
-                            <p className="text-gray-500 font-medium text-sm">
-                                {searchTerm ? 'No se encontraron pacientes.' : 'No hay pacientes registrados.'}
+                        <div className="text-center py-8">
+                            <p className="text-gray-500 text-sm">
+                                {searchTerm ? 'Sin resultados' : 'Sin pacientes'}
                             </p>
                         </div>
                     ) : (
-                        <div className="space-y-2 max-h-[480px] overflow-y-auto pr-1 scrollbar-thin scrollbar-thumb-gray-200">
+                        <div className="space-y-1 max-h-[400px] overflow-y-auto">
                             {filteredPatients.map(patient => (
                                 <button
                                     key={patient.id}
                                     onClick={() => navigate(`/historia/${patient.id}`)}
-                                    className="w-full text-left px-3 md:px-5 py-3 md:py-4 rounded-xl border border-transparent hover:border-primary/30 hover:bg-primary/5 transition-all duration-200 flex items-center gap-3 md:gap-4 group outline-none focus:bg-primary/5"
+                                    className="w-full text-left px-3 py-3 rounded-lg hover:bg-gray-50 transition-colors flex items-center gap-3 group"
                                 >
                                     {/* Avatar */}
                                     <div className="h-9 w-9 md:h-11 md:w-11 rounded-full bg-gray-100 group-hover:bg-primary/15 text-gray-500 group-hover:text-primary flex items-center justify-center font-bold text-xs md:text-sm shrink-0 transition-colors uppercase">
@@ -396,6 +396,26 @@ const PatientClinicalView = ({ patientId, navigate }) => {
                     </div>
 
                     <div className="flex items-center gap-2 w-full sm:w-auto mt-2 sm:mt-0">
+                        <div className="relative group">
+                            <button type="button"
+                                className="flex-1 sm:flex-none px-3 py-2.5 text-gray-600 hover:text-primary hover:bg-primary/10 font-bold transition-all flex items-center justify-center gap-2 rounded-xl text-sm border-2 border-gray-200">
+                                <Download size={18} /> Descargar
+                            </button>
+                            <div className="absolute right-0 mt-2 w-48 bg-white rounded-xl shadow-lg border border-gray-100 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all z-50">
+                                <button onClick={() => generateClinicalHistoryPDF(patient, clinicalData, {})}
+                                    className="w-full text-left px-4 py-3 hover:bg-gray-50 text-sm font-medium text-gray-700 flex items-center gap-2 rounded-t-xl">
+                                    <FileText size={16} /> Historia Clínica
+                                </button>
+                                <button onClick={() => generateFormPDF(patient, clinicalData)}
+                                    className="w-full text-left px-4 py-3 hover:bg-gray-50 text-sm font-medium text-gray-700 flex items-center gap-2">
+                                    <FileText size={16} /> Formulario
+                                </button>
+                                <button onClick={() => generateCertificatePDF(patient, 'treatment')}
+                                    className="w-full text-left px-4 py-3 hover:bg-gray-50 text-sm font-medium text-gray-700 flex items-center gap-2 rounded-b-xl">
+                                    <FileText size={16} /> Certificado
+                                </button>
+                            </div>
+                        </div>
                         {isEditing ? (
                             <>
                                 <button type="button" onClick={handleCancel}
