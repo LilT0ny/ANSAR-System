@@ -294,7 +294,7 @@ interface AppointmentFilters {
 
 export const appointmentsAPI = {
     list: async (params: AppointmentFilters = {}): Promise<Appointment[]> => {
-        let query = supabase.from('appointments').select('*');
+        let query = supabase.from('appointments').select('*, patient:patients(id, first_name, last_name)');
 
         if (params.date) {
             query = query.eq('date', params.date);
@@ -314,7 +314,7 @@ export const appointmentsAPI = {
             supabase
                 .from('appointments')
                 .insert([data])
-                .select()
+                .select('*, patient:patients(id, first_name, last_name)')
                 .single()
         );
     },
@@ -325,7 +325,7 @@ export const appointmentsAPI = {
                 .from('appointments')
                 .update(data)
                 .eq('id', id)
-                .select()
+                .select('*, patient:patients(id, first_name, last_name)')
                 .single()
         );
     },
