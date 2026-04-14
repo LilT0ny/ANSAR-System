@@ -198,8 +198,12 @@ const Patients = () => {
                                             <div className="flex items-center gap-2 text-xs text-gray-500">
                                                 <span>{calculateAge(patient.date_of_birth)} años</span>
                                                 <span>•</span>
-                                                <span className={Number(patient.debt || 0) > 0 ? 'text-red-600' : 'text-green-600'}>
-                                                    ${Number(patient.debt || 0).toFixed(2)}
+                                                <span className={Number(patient.debt || 0) > 0 ? 'text-red-600 font-semibold' : Number(patient.debt || 0) < 0 ? 'text-blue-600 font-semibold' : 'text-green-600'}>
+                                                    {Number(patient.debt || 0) > 0 
+                                                        ? `Deuda: $${Number(patient.debt).toFixed(2)}` 
+                                                        : Number(patient.debt || 0) < 0 
+                                                        ? `Crédito: $${Math.abs(Number(patient.debt)).toFixed(2)}` 
+                                                        : 'Sin deuda'}
                                                 </span>
                                             </div>
                                         </div>
@@ -267,9 +271,11 @@ const Patients = () => {
                                             </td>
                                             <td className="px-4 py-3 text-sm font-medium">
                                                 {Number(patient.debt || 0) > 0 ? (
-                                                    <span className="text-red-600">${Number(patient.debt).toFixed(2)}</span>
+                                                    <span className="text-red-600 font-semibold">Deuda: ${Number(patient.debt).toFixed(2)}</span>
+                                                ) : Number(patient.debt || 0) < 0 ? (
+                                                    <span className="text-blue-600 font-semibold">Crédito: ${Math.abs(Number(patient.debt)).toFixed(2)}</span>
                                                 ) : (
-                                                    <span className="text-green-600">$0.00</span>
+                                                    <span className="text-green-600">Sin deuda</span>
                                                 )}
                                             </td>
                                             <td className="px-4 py-3 flex justify-center gap-2">

@@ -8,7 +8,7 @@ import {
     Loader2, Search, Users, Download
 } from 'lucide-react';
 import { Odontogram, OrthodonticGallery } from '../components/organisms';
-import { patientsAPI } from '../services/api';
+import { patientsAPI, serviceHistoryAPI } from '../services/api';
 import { calculateAge } from '../utils';
 import generateClinicalHistoryPDF from '../utils/clinicalHistoryPDF';
 import generateFormPDF from '../utils/formPDF';
@@ -203,6 +203,7 @@ const PatientClinicalView = ({ patientId, navigate }) => {
     const [activeTab, setActiveTab] = useState('datos');
     const [patient, setPatient] = useState(null);
     const [clinicalData, setClinicalData] = useState(null);
+    const [serviceHistory, setServiceHistory] = useState([]);
     const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState(false);
     const [error, setError] = useState(null);
@@ -244,6 +245,15 @@ const PatientClinicalView = ({ patientId, navigate }) => {
                 }
             } catch (e) {
                 console.log('No clinical history found:', e.message);
+            }
+
+            // Fetch service history / atenciones
+            try {
+                const history = await serviceHistoryAPI.list(patientId);
+                setServiceHistory(history || []);
+            } catch (e) {
+                console.log('No service history found:', e.message);
+                setServiceHistory([]);
             }
         } catch (err) {
             console.error('Error fetching patient:', err);
@@ -606,6 +616,56 @@ const PatientClinicalView = ({ patientId, navigate }) => {
                     </div>
                 </div>
 
+
+                {/* ── Card: Service History / Atenciones ─── */}
+                {serviceHistory && serviceHistory.length > 0 && (
+                    <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden animate-in fade-in duration-300">
+                        <SectionHeader
+                            title="Historial de Atenciones"
+                            icon={FileText}
+                            iconColor="text-green-600"
+                            gradientFrom="from-green-50"
+                            gradientTo="to-green-50/50"
+                        />
+                        <div className="p-5 md:p-8">
+                            <div className="space-y-3 max-h-96 overflow-y-auto">
+                                {serviceHistory.map((service, idx) => (
+                                    <div key={service.id || idx} className="p-4 border border-gray-200 rounded-xl hover:border-primary/30 hover:bg-primary/5 transition-all">
+                                        <div className="flex items-start justify-between gap-4">
+                                            <div className="flex-1">
+                                                <div className="flex items-center gap-2 mb-2">
+                                                    <span className="font-bold text-primary text-sm">{service.invoice_number}</span>
+                                                    <span className="text-xs text-gray-400">{new Date(service.created_at).toLocaleDateString('es-ES', { 
+                                                        year: 'numeric', 
+                                                        month: 'short', 
+                                                        day: 'numeric',
+                                                        hour: '2-digit',
+                                                        minute: '2-digit'
+                                                    })}</span>
+                                                </div>
+                                                <div className="text-sm space-y-1">
+                                                    <p><span className="text-gray-500">Subtotal:</span> <span className="font-semibold">${service.subtotal?.toFixed(2) || '0.00'}</span></p>
+                                                    <p><span className="text-gray-500">Descuento:</span> <span className="font-semibold text-red-600">-${service.discount?.toFixed(2) || '0.00'}</span></p>
+                                                    <p><span className="text-gray-500">Total:</span> <span className="font-serif font-bold text-lg text-primary">${service.total?.toFixed(2) || '0.00'}</span></p>
+                                                    <p><span className="text-gray-500">Pagado:</span> <span className="font-semibold text-green-600">${service.payment_amount?.toFixed(2) || '0.00'}</span></p>
+                                                    {service.debt > 0 ? (
+                                                        <p><span className="text-gray-500">Deuda:</span> <span className="font-semibold text-orange-600">${service.debt?.toFixed(2) || '0.00'}</span></p>
+                                                    ) : service.debt < 0 ? (
+                                                        <p><span className="text-gray-500">Crédito:</span> <span className="font-semibold text-blue-600">${Math.abs(service.debt).toFixed(2) || '0.00'}</span></p>
+                                                    ) : null}
+                                                    <p><span className="text-gray-500">Método:</span> <span className="font-semibold text-sm capitalize">{service.payment_method || 'N/A'}</span></p>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+                            {serviceHistory.length === 0 && (
+                                <p className="text-center text-gray-400 text-sm">Sin atenciones registradas</p>
+                            )}
+                        </div>
+                    </div>
+                )}
 
             </div>
 

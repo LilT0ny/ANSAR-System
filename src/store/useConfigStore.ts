@@ -4,6 +4,7 @@ import { persist } from 'zustand/middleware';
 interface ConfigState {
   clinicName: string;
   logoUrl: string;
+  clinicImage: string;
   primaryColor: string;
   secondaryColor: string;
   accentColor: string;
@@ -46,6 +47,7 @@ const useConfigStore = create<ConfigState>()(
     (set) => ({
       clinicName: 'MedicCore',
       logoUrl: '',
+      clinicImage: '',
       primaryColor: '#8CC63E',
       secondaryColor: '#6B7280',
       accentColor: '#8CC63E',

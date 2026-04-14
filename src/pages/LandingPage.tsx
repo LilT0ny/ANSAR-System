@@ -6,26 +6,24 @@ import useConfigStore from '../store/useConfigStore';
 
 const LandingPage = () => {
     const navigate = useNavigate();
-    const { clinicName, logoUrl, primaryColor, doctorName, specialty, email, phone, address, services, schedule, doctorImage } = useConfigStore();
+    const { clinicName, logoUrl, clinicImage, primaryColor, doctorName, specialty, email, phone, address, services, schedule, doctorImage } = useConfigStore();
     const [formData, setFormData] = useState({ name: '', email: '', phone: '', message: '' });
 
-    const getScheduleDisplay = () => {
-        if (!schedule) return 'Horario no configurado';
+    const getScheduleList = () => {
+        if (!schedule) return [];
         
         const daysOfWeek = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'];
-        const dayNames = ['Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb', 'Dom'];
+        const dayNames = ['Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado', 'Domingo'];
         
-        const enabledDays = daysOfWeek
+        return daysOfWeek
             .map((day, idx) => {
                 const daySchedule = schedule[day];
                 if (daySchedule?.enabled) {
-                    return `${dayNames[idx]}: ${daySchedule.open} - ${daySchedule.close}`;
+                    return { day: dayNames[idx], open: daySchedule.open, close: daySchedule.close };
                 }
                 return null;
             })
             .filter(Boolean);
-        
-        return enabledDays.length > 0 ? enabledDays.join(' | ') : 'Horario no disponible';
     };
 
     const handleSendMessage = (e) => {
@@ -188,7 +186,11 @@ const LandingPage = () => {
                                 </div>
                                 <div className="flex items-center space-x-4">
                                     <div className="bg-white p-3 rounded-full shadow-sm text-primary"><Clock /></div>
-                                    <p className="text-lg text-sm md:text-base">{getScheduleDisplay()}</p>
+                                    <p className="text-lg text-sm md:text-base">{getScheduleList().length > 0 ? (
+                                        getScheduleList().map((item, idx) => (
+                                            <span key={idx} className="block text-sm">{item.day}: {item.open} - {item.close}</span>
+                                        ))
+                                    ) : 'Horario no disponible'}</p>
                                 </div>
                             </div>
                         </div>

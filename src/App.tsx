@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import Dashboard from './pages/Dashboard';
 import Patients from './pages/Patients';
@@ -12,8 +12,17 @@ import OrthodonticsBooking from './pages/OrthodonticsBooking';
 import Billing from './pages/Billing';
 import AdminLayout from './layouts/AdminLayout';
 import { ToastProvider } from './components/atoms';
+import useConfigStore from './store/useConfigStore';
+import { applyThemeColors } from './lib/themeUtils';
 
 function App() {
+    const { primaryColor } = useConfigStore();
+
+    useEffect(() => {
+        // Aplicar el color guardado al cargar la app
+        applyThemeColors(primaryColor);
+    }, [primaryColor]);
+
     return (
         <ToastProvider>
             <Router future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>

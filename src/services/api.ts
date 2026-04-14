@@ -461,5 +461,53 @@ export const notificationsAPI = {
     },
 };
 
+/**
+ * API de Atenciones / Historial de Servicios
+ * Gestiona el registro de atenciones y servicios prestados
+ */
+export const serviceHistoryAPI = {
+    list: async (patientId: string): Promise<Record<string, any>[]> => {
+        return handleSupabase(
+            supabase
+                .from('service_histories')
+                .select('*')
+                .eq('patient_id', patientId)
+                .order('created_at', { ascending: false })
+        );
+    },
+
+    create: async (data: Record<string, any>): Promise<Record<string, any>> => {
+        return handleSupabase(
+            supabase
+                .from('service_histories')
+                .insert([{
+                    patient_id: data.patient_id,
+                    invoice_number: data.invoiceNumber,
+                    subtotal: data.subtotal,
+                    discount: data.globalDiscount,
+                    total: data.total,
+                    payment_amount: data.paymentAmount,
+                    debt: data.debt,
+                    payment_method: data.paymentMethod,
+                    items: data.items,
+                    notes: data.notes || '',
+                    created_at: new Date().toISOString()
+                }])
+                .select()
+                .single()
+        );
+    },
+
+    getById: async (id: string): Promise<Record<string, any>> => {
+        return handleSupabase(
+            supabase
+                .from('service_histories')
+                .select('*')
+                .eq('id', id)
+                .single()
+        );
+    },
+};
+
 // Compatibilidad con versiones anteriores
 export const api = { auth: authAPI };
