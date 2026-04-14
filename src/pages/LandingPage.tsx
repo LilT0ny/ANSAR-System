@@ -2,16 +2,21 @@ import React from 'react';
 import { motion } from 'framer-motion';
 import { Calendar, CheckCircle, Clock, MapPin, Phone, Star } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
+import useConfigStore from '../store/useConfigStore';
 
 const LandingPage = () => {
     const navigate = useNavigate();
+    const { clinicName, logoUrl, primaryColor, doctorName, specialty, email, phone, address, services } = useConfigStore();
 
     return (
         <div className="font-sans text-secondary">
             {/* Navbar */}
             <nav className="fixed w-full bg-white/90 backdrop-blur-md z-50 shadow-sm">
                 <div className="container mx-auto px-4 md:px-6 py-4 flex justify-between items-center">
-                    <h1 className="text-xl md:text-2xl font-serif font-bold text-primary tracking-wide">AN-SAR</h1>
+                    <div className="flex items-center gap-2">
+                        {logoUrl && <img src={logoUrl} alt="Logo" className="h-8 w-8 rounded" />}
+                        <h1 className="text-xl md:text-2xl font-serif font-bold text-primary tracking-wide">{clinicName}</h1>
+                    </div>
                     <div className="hidden lg:flex space-x-8">
                         <a href="#inicio" className="text-secondary hover:text-primary transition-colors text-sm">Inicio</a>
                         <a href="#servicios" className="text-secondary hover:text-primary transition-colors text-sm">Servicios</a>
@@ -83,12 +88,17 @@ const LandingPage = () => {
                     </div>
 
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-                        <ServiceCard title="Odontología General" desc="Limpiezas, obturaciones y prevención." />
-                        <ServiceCard title="Ortodoncia" desc="Alineación perfecta con brackets o invisalign." />
-                        <ServiceCard title="Estética Dental" desc="Blanqueamientos y carillas de porcelana." />
-                        <ServiceCard title="Implantología" desc="Recupera tu sonrisa con implantes de alta gama." />
-                        <ServiceCard title="Endodoncia" desc="Tratamientos de conducto sin dolor." />
-                        <ServiceCard title="Odontopediatría" desc="Cuidado especial para los mas pequeños." />
+                        {services && services.length > 0 ? (
+                            services.map((service) => (
+                                <ServiceCard 
+                                    key={service.id}
+                                    title={service.name}
+                                    desc={`${service.price} • ${service.duration}`}
+                                />
+                            ))
+                        ) : (
+                            <ServiceCard title="Cargando servicios..." desc="Por favor, espera." />
+                        )}
                     </div>
                 </div>
             </section>
@@ -98,20 +108,22 @@ const LandingPage = () => {
                 <div className="container mx-auto px-6 flex flex-col md:flex-row items-center gap-12">
                     <div className="md:w-1/3">
                         <div className="aspect-[3/4] rounded-2xl overflow-hidden shadow-xl bg-gray-200">
-                            {/* Doctor Image Placeholder */}
-                            <img src="https://images.unsplash.com/photo-1559839734-2b71ea197ec2?auto=format&fit=crop&q=80&w=600" alt="Doctora" className="w-full h-full object-cover" />
+                            <img src="https://images.unsplash.com/photo-1559839734-2b71ea197ec2?auto=format&fit=crop&q=80&w=600" alt={doctorName} className="w-full h-full object-cover" />
                         </div>
                     </div>
                     <div className="md:w-2/3">
-                        <h2 className="text-4xl font-serif font-bold text-gray-800 mb-6">Conoce a la Dra. Ansar</h2>
+                        <h2 className="text-4xl font-serif font-bold text-gray-800 mb-6">Conoce a {doctorName}</h2>
+                        <p className="text-lg text-gray-600 mb-4 leading-relaxed">
+                            {specialty}
+                        </p>
                         <p className="text-lg text-gray-600 mb-6 leading-relaxed">
-                            Con más de 15 años de experiencia transformando sonrisas, la Dra. Ansar lidera un equipo comprometido con la excelencia clínica y el trato humano. Especialista en rehabilitación oral y estética, su filosofía se centra en tratamientos mínimamente invasivos que perduran en el tiempo.
+                            Especialista comprometida con la excelencia clínica y el trato humano. Nuestra filosofía se centra en tratamientos mínimamente invasivos que perduran en el tiempo.
                         </p>
                         <div className="grid grid-cols-2 gap-4">
-                            <div className="flex items-center text-gray-700 font-medium"><CheckCircle className="text-primary mr-2" size={20} /> +5000 Pacientes Felices</div>
-                            <div className="flex items-center text-gray-700 font-medium"><CheckCircle className="text-primary mr-2" size={20} /> Tecnología 3D</div>
+                            <div className="flex items-center text-gray-700 font-medium"><CheckCircle className="text-primary mr-2" size={20} /> Experiencia Comprobada</div>
+                            <div className="flex items-center text-gray-700 font-medium"><CheckCircle className="text-primary mr-2" size={20} /> Tecnología Avanzada</div>
                             <div className="flex items-center text-gray-700 font-medium"><CheckCircle className="text-primary mr-2" size={20} /> Atención Personalizada</div>
-                            <div className="flex items-center text-gray-700 font-medium"><CheckCircle className="text-primary mr-2" size={20} /> Certificación Internacional</div>
+                            <div className="flex items-center text-gray-700 font-medium"><CheckCircle className="text-primary mr-2" size={20} /> Calidad Garantizada</div>
                         </div>
                     </div>
                 </div>
@@ -126,15 +138,15 @@ const LandingPage = () => {
                             <div className="space-y-6">
                                 <div className="flex items-center space-x-4">
                                     <div className="bg-white p-3 rounded-full shadow-sm text-primary"><MapPin /></div>
-                                    <p className="text-lg">Av. Principal 123, Ciudad Médica</p>
+                                    <p className="text-lg">{address || 'Dirección no disponible'}</p>
                                 </div>
                                 <div className="flex items-center space-x-4">
                                     <div className="bg-white p-3 rounded-full shadow-sm text-primary"><Phone /></div>
-                                    <p className="text-lg">+57 310 123 4567</p>
+                                    <a href={`tel:${phone}`} className="text-lg hover:text-primary transition-colors">{phone || 'Teléfono no disponible'}</a>
                                 </div>
                                 <div className="flex items-center space-x-4">
                                     <div className="bg-white p-3 rounded-full shadow-sm text-primary"><Clock /></div>
-                                    <p className="text-lg">Lun - Vie: 9:00 AM - 6:00 PM</p>
+                                    <p className="text-lg">Horario personalizado configurado en la clínica</p>
                                 </div>
                             </div>
                         </div>
@@ -153,8 +165,8 @@ const LandingPage = () => {
             {/* Footer */}
             <footer className="bg-gray-900 text-white py-12">
                 <div className="container mx-auto px-6 text-center">
-                    <h2 className="text-2xl font-serif font-bold mb-4">AN-SAR</h2>
-                    <p className="text-gray-400">© 2026 Clínica Dental. Todos los derechos reservados.</p>
+                    <h2 className="text-2xl font-serif font-bold mb-4">{clinicName}</h2>
+                    <p className="text-gray-400">© 2026 {clinicName}. Todos los derechos reservados.</p>
                 </div>
             </footer>
 
