@@ -197,7 +197,7 @@ const Appointments = () => {
 
     const handleAttendance = async (id, statusUI) => {
         let backendStatus = statusUI;
-        if (statusUI === 'llegó') backendStatus = 'atendido';
+        if (statusUI === 'llegó') backendStatus = 'completada';
         if (statusUI === 'no_llegó') backendStatus = 'anulada';
 
         try {
