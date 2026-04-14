@@ -8,8 +8,7 @@ import jsPDF from 'jspdf';
 import 'jspdf-autotable';
 import { patientsAPI, notificationsAPI } from '../services/api';
 import { generateInvoicePDF } from '../utils/pdfGenerator';
-import { PageHeader } from '../components/molecules/PageHeader';
-import { SectionHeader } from '../components/molecules/SectionHeader';
+import { PageHeader, SectionHeader } from '../components/molecules';
 import { useToast } from '../components/atoms';
 
 /** Métodos de pago disponibles */

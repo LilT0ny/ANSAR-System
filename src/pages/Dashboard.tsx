@@ -3,8 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { Activity, Users, Calendar, DollarSign, ChevronRight, TrendingUp, BarChart2 } from 'lucide-react';
 import { usePatients, useAppointments, useInvoices } from '../hooks';
 import { Spinner } from '../components/atoms';
-import { PageHeader } from '../components/molecules/PageHeader';
-import { SectionHeader } from '../components/molecules/SectionHeader';
+import { PageHeader, SectionHeader } from '../components/molecules';
 
 const Dashboard = () => {
   const navigate = useNavigate();

@@ -13,8 +13,7 @@ import { calculateAge } from '../utils';
 import generateClinicalHistoryPDF from '../utils/clinicalHistoryPDF';
 import generateFormPDF from '../utils/formPDF';
 import generateCertificatePDF from '../utils/certificatePDF';
-import { PageHeader } from '../components/molecules/PageHeader';
-import { SectionHeader } from '../components/molecules/SectionHeader';
+import { PageHeader, SectionHeader } from '../components/molecules';
 import { useToast } from '../components/atoms';
 
 

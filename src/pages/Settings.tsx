@@ -1,9 +1,9 @@
 import { useEffect, useState } from 'react';
-import { Camera, Save, Building, Clock, User, Phone, Mail, MapPin, Plus, Trash2, CheckCircle, Palette, Stethoscope } from 'lucide-react';
+import { Camera, Save, Building, Clock, User, Phone, Mail, Plus, Trash2, Stethoscope } from 'lucide-react';
 import useConfigStore from '../store/useConfigStore';
-import { SectionHeader } from '../components/molecules/SectionHeader';
-import { PageHeader } from '../components/molecules/PageHeader';
+import { SectionHeader, PageHeader } from '../components/molecules';
 import { gradients, iconColors } from '../constants/colors';
+import { useToast } from '../components/atoms';
 
 const Settings = () => {
   const { 
@@ -19,7 +19,7 @@ const Settings = () => {
 
   const [localServices, setLocalServices] = useState(services);
   const [localSchedule, setLocalSchedule] = useState(schedule);
-  const [showToast, setShowToast] = useState(false);
+  const { showToast } = useToast();
 
   useEffect(() => {
     applyTheme(localConfig.primaryColor);
@@ -40,13 +40,16 @@ const Settings = () => {
   };
 
   const handleSave = () => {
-    updateConfig({
-      ...localConfig,
-      services: localServices,
-      schedule: localSchedule,
-    });
-    setShowToast(true);
-    setTimeout(() => setShowToast(false), 3000);
+    try {
+      updateConfig({
+        ...localConfig,
+        services: localServices,
+        schedule: localSchedule,
+      });
+      showToast('Sus datos se han guardado correctamente.', 'success');
+    } catch {
+      showToast('Ocurrió un error al guardar. Intentá de nuevo.', 'error');
+    }
   };
 
   const handleImageChange = (e, field) => {
@@ -349,12 +352,7 @@ const Settings = () => {
 
       </div>
 
-      {showToast && (
-        <div className="fixed bottom-8 right-8 bg-gray-800 text-white px-6 py-3 rounded-xl shadow-lg flex items-center gap-3 z-50 animate-in slide-in-from-bottom-4">
-          <CheckCircle className="text-green-400" size={20} />
-          <span>Guardado correctamente</span>
-        </div>
-      )}
+
     </div>
   );
 };

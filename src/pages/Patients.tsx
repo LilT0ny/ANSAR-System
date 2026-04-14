@@ -6,8 +6,7 @@ import clsx from 'clsx';
 import { patientsAPI } from '../services/api';
 import { Patient } from '../types';
 import { calculateAge } from '../utils';
-import { PageHeader } from '../components/molecules/PageHeader';
-import { SectionHeader } from '../components/molecules/SectionHeader';
+import { PageHeader, SectionHeader } from '../components/molecules';
 import { useToast } from '../components/atoms';
 
 const Patients = () => {
