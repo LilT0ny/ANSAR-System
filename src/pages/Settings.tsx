@@ -65,7 +65,7 @@ const Settings = () => {
 
   const addService = () => {
     const newId = Math.max(...localServices.map(s => s.id), 0) + 1;
-    setLocalServices([...localServices, { id: newId, name: '', price: '$0', duration: '30 min' }]);
+    setLocalServices([...localServices, { id: newId, name: '', price: '$0', duration: '30 min', description: '' }]);
   };
 
   const removeService = (id) => {
@@ -288,40 +288,53 @@ const Settings = () => {
               gradientTo={gradients.services.split(' ')[1]}
             />
             <div className="p-5">
-              <div className="space-y-2">
+              <div className="space-y-4">
                 {localServices.map(service => (
-                  <div key={service.id} className="flex items-center gap-2 p-2 bg-gray-50 rounded-lg">
-                    <input 
-                      value={service.name} 
-                      onChange={(e) => updateService(service.id, 'name', e.target.value)}
-                      placeholder="Servicio"
-                      className="flex-1 bg-transparent text-sm"
-                    />
-                    <input 
-                      value={service.price} 
-                      onChange={(e) => updateService(service.id, 'price', e.target.value)}
-                      placeholder="$0"
-                      className="w-16 bg-transparent text-sm text-center"
-                    />
-                    <input 
-                      value={service.duration} 
-                      onChange={(e) => updateService(service.id, 'duration', e.target.value)}
-                      placeholder="30m"
-                      className="w-14 bg-transparent text-sm text-center"
-                    />
-                    <button 
-                      onClick={() => removeService(service.id)} 
-                      className="text-gray-400 hover:text-red-500"
-                    >
-                      <Trash2 size={14} />
-                    </button>
+                  <div key={service.id} className="p-4 bg-gray-50 rounded-lg space-y-3 border border-gray-200">
+                    <div className="flex gap-2 items-start">
+                      <div className="flex-1 space-y-2">
+                        <input 
+                          value={service.name} 
+                          onChange={(e) => updateService(service.id, 'name', e.target.value)}
+                          placeholder="Nombre del servicio"
+                          className="w-full bg-white border border-gray-200 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none"
+                        />
+                        <textarea 
+                          value={service.description} 
+                          onChange={(e) => updateService(service.id, 'description', e.target.value)}
+                          placeholder="Descripción del servicio"
+                          rows={2}
+                          className="w-full bg-white border border-gray-200 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none resize-none"
+                        />
+                      </div>
+                      <button 
+                        onClick={() => removeService(service.id)} 
+                        className="text-gray-400 hover:text-red-500 mt-2"
+                      >
+                        <Trash2 size={16} />
+                      </button>
+                    </div>
+                    <div className="flex gap-2">
+                      <input 
+                        value={service.price} 
+                        onChange={(e) => updateService(service.id, 'price', e.target.value)}
+                        placeholder="Precio"
+                        className="flex-1 bg-white border border-gray-200 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none"
+                      />
+                      <input 
+                        value={service.duration} 
+                        onChange={(e) => updateService(service.id, 'duration', e.target.value)}
+                        placeholder="Duración"
+                        className="flex-1 bg-white border border-gray-200 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none"
+                      />
+                    </div>
                   </div>
                 ))}
                 <button 
                   onClick={addService} 
                   className="w-full py-2 border border-dashed border-gray-200 rounded-lg text-gray-400 hover:border-primary hover:text-primary text-sm transition-colors flex items-center justify-center gap-1"
                 >
-                  <Plus size={14} /> Agregar
+                  <Plus size={14} /> Agregar Servicio
                 </button>
               </div>
             </div>

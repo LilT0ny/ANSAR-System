@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
-import useOdontogramStore from '../store/useOdontogramStore';
-import useConfigStore from '../store/useConfigStore';
-import Tooth from './Tooth';
+import useOdontogramStore from '../../store/useOdontogramStore';
+import useConfigStore from '../../store/useConfigStore';
+import Tooth from '../atoms/Tooth';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
     X, Check, Activity, Trash2, MousePointer,

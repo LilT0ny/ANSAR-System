@@ -131,7 +131,7 @@ const LandingPage = () => {
                                 <ServiceCard 
                                     key={service.id}
                                     title={service.name}
-                                    desc="Servicio profesional de calidad"
+                                    desc={service.description || 'Servicio profesional de calidad'}
                                 />
                             ))
                         ) : (

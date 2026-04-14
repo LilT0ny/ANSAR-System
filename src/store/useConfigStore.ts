@@ -13,7 +13,7 @@ interface ConfigState {
   phone: string;
   address: string;
   doctorImage: string;
-  services: Array<{ id: number; name: string; price: string; duration: string }>;
+  services: Array<{ id: number; name: string; price: string; duration: string; description: string }>;
   schedule: Record<string, { open: string; close: string; enabled: boolean }>;
   odontogramColors: {
     caries: string;
@@ -25,10 +25,10 @@ interface ConfigState {
 }
 
 const defaultServices = [
-  { id: 1, name: 'Consulta General', price: '$50', duration: '30 min' },
-  { id: 2, name: 'Limpieza Dental', price: '$80', duration: '45 min' },
-  { id: 3, name: 'Blanqueamiento', price: '$200', duration: '60 min' },
-  { id: 4, name: 'Ortodoncia', price: '$100', duration: '30 min' },
+  { id: 1, name: 'Consulta General', price: '$50', duration: '30 min', description: 'Evaluación inicial y diagnóstico de salud bucal' },
+  { id: 2, name: 'Limpieza Dental', price: '$80', duration: '45 min', description: 'Limpieza profesional y eliminación de placa bacteriana' },
+  { id: 3, name: 'Blanqueamiento', price: '$200', duration: '60 min', description: 'Blanqueamiento dental profesional para una sonrisa radiante' },
+  { id: 4, name: 'Ortodoncia', price: '$100', duration: '30 min', description: 'Alineación dental con brackets o dispositivos modernos' },
 ];
 
 const defaultSchedule = {

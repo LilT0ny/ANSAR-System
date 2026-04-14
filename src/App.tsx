@@ -11,30 +11,33 @@ import Booking from './pages/Booking';
 import OrthodonticsBooking from './pages/OrthodonticsBooking';
 import Billing from './pages/Billing';
 import AdminLayout from './layouts/AdminLayout';
+import { ToastProvider } from './components/atoms';
 
 function App() {
     return (
-        <Router future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
-            <div className="font-sans text-secondary bg-gray-50 min-h-screen">
-                <Routes>
-                    {/* Public Route */}
-                    <Route path="/" element={<LandingPage />} />
-                    <Route path="/login" element={<Login />} />
-                    <Route path="/reserva" element={<Booking />} />
-                    <Route path="/reservar/ortodoncia" element={<OrthodonticsBooking />} />
+        <ToastProvider>
+            <Router future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
+                <div className="font-sans text-secondary bg-gray-50 min-h-screen">
+                    <Routes>
+                        {/* Public Route */}
+                        <Route path="/" element={<LandingPage />} />
+                        <Route path="/login" element={<Login />} />
+                        <Route path="/reserva" element={<Booking />} />
+                        <Route path="/reservar/ortodoncia" element={<OrthodonticsBooking />} />
 
-                    {/* Admin Routes (Wrapped in Layout) */}
-                    <Route element={<AdminLayout />}>
-                        <Route path="/dashboard" element={<Dashboard />} />
-                        <Route path="/pacientes" element={<Patients />} />
-                        <Route path="/historia/:id?" element={<ClinicalHistory />} />
-                        <Route path="/citas" element={<Appointments />} />
-                        <Route path="/facturacion" element={<Billing />} />
-                        <Route path="/configuracion" element={<Settings />} />
-                    </Route>
-                </Routes>
-            </div>
-        </Router>
+                        {/* Admin Routes (Wrapped in Layout) */}
+                        <Route element={<AdminLayout />}>
+                            <Route path="/dashboard" element={<Dashboard />} />
+                            <Route path="/pacientes" element={<Patients />} />
+                            <Route path="/historia/:id?" element={<ClinicalHistory />} />
+                            <Route path="/citas" element={<Appointments />} />
+                            <Route path="/facturacion" element={<Billing />} />
+                            <Route path="/configuracion" element={<Settings />} />
+                        </Route>
+                    </Routes>
+                </div>
+            </Router>
+        </ToastProvider>
     );
 }
 

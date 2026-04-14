@@ -2,14 +2,12 @@ import React, { useState } from 'react';
 import { Camera, Upload, X } from 'lucide-react';
 
 const OrthodonticGallery = ({ patientId }) => {
-    const [images, setImages] = useState([
-        { id: 1, url: 'https://images.unsplash.com/photo-1588776814546-1ffcf47267a5?auto=format&fit=crop&q=80&w=200', stage: 'Inicial', date: '2023-01-15' },
-        { id: 2, url: 'https://images.unsplash.com/photo-1606811841689-23dfddce3e95?auto=format&fit=crop&q=80&w=200', stage: 'Progreso', date: '2023-03-20' },
-    ]);
+    // TODO: Conectar con Supabase Storage para persistir imágenes
+    const [images, setImages] = useState([]);
     const [uploading, setUploading] = useState(false);
 
     const handleUpload = (e) => {
-        // Mock upload logic
+        // TODO: Integrar con Supabase Storage para subida real
         const file = e.target.files[0];
         if (file) {
             setUploading(true);

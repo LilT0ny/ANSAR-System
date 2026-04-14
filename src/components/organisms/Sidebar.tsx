@@ -14,8 +14,8 @@ import {
 import { motion, AnimatePresence } from 'framer-motion';
 import clsx from 'clsx';
 
-import { authAPI } from '../services/api';
-import useConfigStore from '../store/useConfigStore';
+import { authAPI } from '../../services/api';
+import useConfigStore from '../../store/useConfigStore';
 
 interface SidebarProps {
     isCollapsed?: boolean;

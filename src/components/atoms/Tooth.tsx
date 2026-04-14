@@ -2,8 +2,8 @@ import React from 'react';
 import { motion } from 'framer-motion';
 import { X as XIcon, Check } from 'lucide-react';
 import clsx from 'clsx';
-import useOdontogramStore from '../store/useOdontogramStore';
-import useConfigStore from '../store/useConfigStore';
+import useOdontogramStore from '../../store/useOdontogramStore';
+import useConfigStore from '../../store/useConfigStore';
 
 const SURFACE_NAMES = ['vestibular', 'distal', 'lingual', 'mesial', 'oclusal'];
 
