@@ -8,13 +8,13 @@ import { useToast } from '../components/atoms';
 const Settings = () => {
   const { 
     clinicName, logoUrl, primaryColor, secondaryColor,
-    doctorName, specialty, email, phone, address, services, schedule,
+    doctorName, specialty, email, phone, address, services, schedule, doctorImage,
     updateConfig 
   } = useConfigStore();
 
   const [localConfig, setLocalConfig] = useState({
     clinicName, logoUrl, primaryColor, secondaryColor,
-    doctorName, specialty, email, phone, address,
+    doctorName, specialty, email, phone, address, doctorImage,
   });
 
   const [localServices, setLocalServices] = useState(services);
@@ -219,6 +219,31 @@ const Settings = () => {
                   className="w-full border border-gray-200 rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none"
                   placeholder="Ej: Odontología General, Ortodoncia"
                 />
+              </div>
+              <div>
+                <label className="block text-sm font-semibold text-gray-600 mb-2">Foto del Doctor/a</label>
+                <div className="flex items-center gap-3">
+                  <div className="relative h-20 w-20 rounded-xl overflow-hidden bg-gray-50 border-2 border-dashed border-gray-200 hover:border-primary transition-colors group">
+                    {localConfig.doctorImage ? (
+                      <img src={localConfig.doctorImage} alt="Doctor" className="w-full h-full object-cover" />
+                    ) : (
+                      <div className="w-full h-full flex items-center justify-center text-gray-300">
+                        <Stethoscope size={24} />
+                      </div>
+                    )}
+                    <label htmlFor="doctor-image-upload" className="absolute inset-0 bg-black/50 flex items-center justify-center cursor-pointer opacity-0 group-hover:opacity-100 transition-opacity">
+                      <Camera size={16} className="text-white" />
+                    </label>
+                    <input 
+                      id="doctor-image-upload" 
+                      type="file" 
+                      accept="image/*" 
+                      className="hidden" 
+                      onChange={(e) => handleImageChange(e, 'doctorImage')} 
+                    />
+                  </div>
+                  <span className="text-xs text-gray-400">Foto 200×300</span>
+                </div>
               </div>
               <div className="grid grid-cols-2 gap-4">
                 <div>

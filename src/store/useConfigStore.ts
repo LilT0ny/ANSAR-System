@@ -12,6 +12,7 @@ interface ConfigState {
   email: string;
   phone: string;
   address: string;
+  doctorImage: string;
   services: Array<{ id: number; name: string; price: string; duration: string }>;
   schedule: Record<string, { open: string; close: string; enabled: boolean }>;
   odontogramColors: {
@@ -53,6 +54,7 @@ const useConfigStore = create<ConfigState>()(
       email: 'contacto@medicore.com',
       phone: '',
       address: '',
+      doctorImage: '',
       services: defaultServices,
       schedule: defaultSchedule,
       odontogramColors: {

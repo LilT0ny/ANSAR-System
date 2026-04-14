@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { motion } from 'framer-motion';
 import { Calendar, CheckCircle, Clock, MapPin, Phone, Star } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
@@ -6,7 +6,8 @@ import useConfigStore from '../store/useConfigStore';
 
 const LandingPage = () => {
     const navigate = useNavigate();
-    const { clinicName, logoUrl, primaryColor, doctorName, specialty, email, phone, address, services, schedule } = useConfigStore();
+    const { clinicName, logoUrl, primaryColor, doctorName, specialty, email, phone, address, services, schedule, doctorImage } = useConfigStore();
+    const [formData, setFormData] = useState({ name: '', email: '', phone: '', message: '' });
 
     const getScheduleDisplay = () => {
         if (!schedule) return 'Horario no configurado';
@@ -25,6 +26,24 @@ const LandingPage = () => {
             .filter(Boolean);
         
         return enabledDays.length > 0 ? enabledDays.join(' | ') : 'Horario no disponible';
+    };
+
+    const handleSendMessage = (e) => {
+        e.preventDefault();
+        if (!formData.name || !formData.email || !formData.phone || !formData.message) {
+            alert('Por favor completa todos los campos');
+            return;
+        }
+        
+        const clinicPhone = phone.replace(/\D/g, '');
+        const clientPhone = formData.phone.replace(/\D/g, '');
+        
+        const message = encodeURIComponent(
+            `*Contacto desde Landing Page*\n\nNombre: ${formData.name}\nEmail: ${formData.email}\nTeléfono: ${formData.phone}\n\nMensaje:\n${formData.message}`
+        );
+        
+        window.open(`https://wa.me/${clinicPhone}?text=${message}`, '_blank');
+        setFormData({ name: '', email: '', phone: '', message: '' });
     };
 
     return (
@@ -112,7 +131,7 @@ const LandingPage = () => {
                                 <ServiceCard 
                                     key={service.id}
                                     title={service.name}
-                                    desc={`${service.price} • ${service.duration}`}
+                                    desc="Servicio profesional de calidad"
                                 />
                             ))
                         ) : (
@@ -127,7 +146,11 @@ const LandingPage = () => {
                 <div className="container mx-auto px-6 flex flex-col md:flex-row items-center gap-12">
                     <div className="md:w-1/3">
                         <div className="aspect-[3/4] rounded-2xl overflow-hidden shadow-xl bg-gray-200">
-                            <img src="https://images.unsplash.com/photo-1559839734-2b71ea197ec2?auto=format&fit=crop&q=80&w=600" alt={doctorName} className="w-full h-full object-cover" />
+                            <img 
+                                src={doctorImage || "https://images.unsplash.com/photo-1559839734-2b71ea197ec2?auto=format&fit=crop&q=80&w=600"} 
+                                alt={doctorName} 
+                                className="w-full h-full object-cover" 
+                            />
                         </div>
                     </div>
                     <div className="md:w-2/3">
@@ -170,11 +193,38 @@ const LandingPage = () => {
                             </div>
                         </div>
                         <div className="md:w-1/2">
-                            <form className="space-y-4">
-                                <input type="text" placeholder="Nombre Completo" className="w-full px-6 py-4 rounded-xl border border-gray-200 focus:ring-2 focus:ring-primary outline-none" />
-                                <input type="email" placeholder="Correo Electrónico" className="w-full px-6 py-4 rounded-xl border border-gray-200 focus:ring-2 focus:ring-primary outline-none" />
-                                <textarea placeholder="Mensaje" rows={4} className="w-full px-6 py-4 rounded-xl border border-gray-200 focus:ring-2 focus:ring-primary outline-none" />
-                                <button className="w-full bg-secondary text-white py-4 rounded-xl font-bold hover:bg-gray-800 transition-colors">Enviar Mensaje</button>
+                            <form onSubmit={handleSendMessage} className="space-y-4">
+                                <input 
+                                    type="text" 
+                                    placeholder="Nombre Completo" 
+                                    value={formData.name}
+                                    onChange={(e) => setFormData({...formData, name: e.target.value})}
+                                    className="w-full px-6 py-4 rounded-xl border border-gray-200 focus:ring-2 focus:ring-primary outline-none" 
+                                />
+                                <input 
+                                    type="email" 
+                                    placeholder="Correo Electrónico" 
+                                    value={formData.email}
+                                    onChange={(e) => setFormData({...formData, email: e.target.value})}
+                                    className="w-full px-6 py-4 rounded-xl border border-gray-200 focus:ring-2 focus:ring-primary outline-none" 
+                                />
+                                <input 
+                                    type="tel" 
+                                    placeholder="Teléfono" 
+                                    value={formData.phone}
+                                    onChange={(e) => setFormData({...formData, phone: e.target.value})}
+                                    className="w-full px-6 py-4 rounded-xl border border-gray-200 focus:ring-2 focus:ring-primary outline-none" 
+                                />
+                                <textarea 
+                                    placeholder="Mensaje" 
+                                    rows={4}
+                                    value={formData.message}
+                                    onChange={(e) => setFormData({...formData, message: e.target.value})}
+                                    className="w-full px-6 py-4 rounded-xl border border-gray-200 focus:ring-2 focus:ring-primary outline-none" 
+                                />
+                                <button type="submit" className="w-full bg-secondary text-white py-4 rounded-xl font-bold hover:bg-gray-800 transition-colors">
+                                    Enviar por WhatsApp
+                                </button>
                             </form>
                         </div>
                     </div>
