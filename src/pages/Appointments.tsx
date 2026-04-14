@@ -117,17 +117,20 @@ const Appointments = () => {
             }
 
             const mappedAppts = appts.map(a => {
-                const cleanedStartTime = a.start_time.replace(/([+-]\d{2}:\d{2}|Z)$/i, '');
-                const cleanedEndTime = a.end_time.replace(/([+-]\d{2}:\d{2}|Z)$/i, '');
-                const startDate = typeof cleanedStartTime === 'string' ? new Date(cleanedStartTime) : new Date();
-                const endDate = typeof cleanedEndTime === 'string' ? new Date(cleanedEndTime) : new Date();
+                // Las horas ya están en formato HH:MM:SS, solo necesitamos combinarlas con la fecha
+                // La fecha está en a.date (yyyy-MM-dd)
+                const dateStr = a.date || format(new Date(), 'yyyy-MM-dd');
+                
+                // Construir datetime válido para parsing
+                const startDatetime = new Date(`${dateStr}T${a.start_time}`);
+                const endDatetime = new Date(`${dateStr}T${a.end_time}`);
 
                 return {
                     id: a.id,
                     title: a.reason || 'Cita',
-                    start: format(startDate, 'HH:mm'),
-                    end: format(endDate, 'HH:mm'),
-                    date: a.date || format(startDate, 'yyyy-MM-dd'),
+                    start: format(startDatetime, 'HH:mm'),
+                    end: format(endDatetime, 'HH:mm'),
+                    date: dateStr,
                     type: a.type,
                     status: a.status,
                     patientId: a.patient_id,
