@@ -7,24 +7,15 @@ import {
     CheckCircle, AlertCircle, Calendar, Phone, Mail, MapPin, Briefcase,
     Loader2, Search, Users, Download
 } from 'lucide-react';
-import Odontogram from '../components/Odontogram';
-import OrthodonticGallery from '../components/OrthodonticGallery';
+import { Odontogram, OrthodonticGallery } from '../components/organisms';
 import { patientsAPI } from '../services/api';
+import { calculateAge } from '../utils';
 import generateClinicalHistoryPDF from '../utils/clinicalHistoryPDF';
 import generateFormPDF from '../utils/formPDF';
 import generateCertificatePDF from '../utils/certificatePDF';
 import { PageHeader } from '../components/molecules/PageHeader';
-
-// ── Age calculation helper ────────────────────────────────────
-const calculateAge = (birthDate) => {
-    if (!birthDate) return '—';
-    const today = new Date();
-    const birth = new Date(birthDate);
-    let age = today.getFullYear() - birth.getFullYear();
-    const m = today.getMonth() - birth.getMonth();
-    if (m < 0 || (m === 0 && today.getDate() < birth.getDate())) age--;
-    return age;
-};
+import { SectionHeader } from '../components/molecules/SectionHeader';
+import { useToast } from '../components/atoms';
 
 
 // ═══════════════════════════════════════════════════════════════
@@ -102,17 +93,14 @@ const PatientSelectionScreen = ({ navigate }) => {
             <div className="bg-white rounded-xl shadow-sm overflow-hidden">
 
                 {/* Info Banner */}
-                <div className="bg-primary/5 px-4 md:px-6 py-4 border-b border-gray-100">
-                    <div className="flex items-center gap-3">
-                        <div className="h-10 w-10 rounded-lg bg-primary/10 flex items-center justify-center">
-                            <Users className="text-primary" size={18} />
-                        </div>
-                        <div>
-                            <h2 className="text-base font-bold text-gray-800">Buscar Paciente</h2>
-                            <p className="text-xs text-gray-500">Por nombre, cédula o teléfono</p>
-                        </div>
-                    </div>
-                </div>
+                <SectionHeader
+                    title="Buscar Paciente"
+                    description="Por nombre, cédula o teléfono"
+                    icon={User}
+                    iconColor="text-primary"
+                    gradientFrom="from-primary/10"
+                    gradientTo="to-primary/5"
+                />
 
                 {/* Search Input */}
                 <div className="p-4 border-b border-gray-100">
@@ -211,9 +199,9 @@ const PatientSelectionScreen = ({ navigate }) => {
 // PATIENT CLINICAL VIEW (when ID is present)
 // ═══════════════════════════════════════════════════════════════
 const PatientClinicalView = ({ patientId, navigate }) => {
+    const { showToast } = useToast();
     const [isEditing, setIsEditing] = useState(false);
     const [activeTab, setActiveTab] = useState('datos');
-    const [showToast, setShowToast] = useState(false);
     const [patient, setPatient] = useState(null);
     const [clinicalData, setClinicalData] = useState(null);
     const [loading, setLoading] = useState(true);
@@ -289,8 +277,7 @@ const PatientClinicalView = ({ patientId, navigate }) => {
             };
             await patientsAPI.update(patientId, apiData);
             setIsEditing(false);
-            setShowToast(true);
-            setTimeout(() => setShowToast(false), 3000);
+            showToast('Datos del paciente guardados correctamente.', 'success');
             await fetchData();
         } catch (err) {
             const msg = typeof err === 'object' ? (err.message || 'Error al guardar') : String(err);
@@ -308,8 +295,7 @@ const PatientClinicalView = ({ patientId, navigate }) => {
             const { id: _id, patient_id: _pid, created_at: _ca, updated_at: _ua, created_by: _cb, ...cleanData } = data;
             await patientsAPI.upsertHistory(patientId, cleanData);
             setIsEditing(false);
-            setShowToast(true);
-            setTimeout(() => setShowToast(false), 3000);
+            showToast('Historia clínica actualizada correctamente.', 'success');
             await fetchData();
         } catch (err) {
             const msg = typeof err === 'object' ? (err.message || 'Error al guardar historia clínica') : String(err);
@@ -445,91 +431,74 @@ const PatientClinicalView = ({ patientId, navigate }) => {
                     </div>
                 )}
 
-                {isEditing && (
-                    <div className="mt-4 bg-primary/5 border border-primary/20 rounded-xl px-4 py-3 flex items-center gap-3 text-xs md:text-sm text-primary font-bold animate-in slide-in-from-top-2">
-                        <Edit2 size={16} />
-                        Modo edición activo. Recuerda guardar tus cambios.
-                    </div>
-                )}
             </div>
 
-            {/* ─── Content Layout ─── */}
-            <div className="flex gap-6 md:gap-8 flex-col lg:flex-row">
+            {/* ─── Content: Stacked Cards ─── */}
+            <div className="space-y-6">
 
-                {/* Tabs */}
-                <div className="w-full lg:w-64 shrink-0 overflow-x-auto lg:overflow-visible flex lg:flex-col gap-2 pb-2 lg:pb-0 scrollbar-none scroll-smooth">
-                    {tabs.map(tab => (
-                        <button type="button" key={tab.id} onClick={() => setActiveTab(tab.id)}
-                            className={clsx(
-                                "flex-1 lg:flex-none whitespace-nowrap text-left px-5 py-3.5 md:py-4 rounded-xl flex items-center justify-center lg:justify-start gap-3 transition-all duration-300 font-bold text-sm",
-                                activeTab === tab.id
-                                    ? "bg-primary text-white shadow-lg shadow-primary/25"
-                                    : "bg-white text-gray-500 hover:bg-gray-100 border border-gray-100 lg:border-transparent hover:border-gray-200"
-                            )}>
-                            <tab.icon size={18} className={activeTab === tab.id ? "text-white" : "text-gray-400"} />
-                            <span>{tab.label}</span>
-                        </button>
-                    ))}
+                
+
+                {/* ── Card: Odontogram ─── */}
+                <div className="animate-in fade-in duration-300">
+                    <Odontogram patientId={patientId} readOnly={!isEditing} />
                 </div>
 
-                {/* Content Area */}
-                <div className="flex-1 min-h-[600px]">
-
-                    {/* ── Section: Personal Data ─── */}
-                    {activeTab === 'datos' && (
-                        <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-5 md:p-8 animate-in fade-in zoom-in-95 duration-200">
-                            <h2 className="text-lg md:text-xl font-serif font-bold text-gray-800 mb-6 flex items-center gap-2 pb-4 border-b border-gray-100">
-                                <User className="text-primary" size={20} /> Datos Personales
-                            </h2>
-                            <form onSubmit={(e) => e.preventDefault()}>
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-5 md:gap-6">
-                                    <InputGroup label="Nombres" name="firstName" register={patientForm.register} errors={patientForm.formState.errors} disabled={!isEditing} required />
-                                    <InputGroup label="Apellidos" name="lastName" register={patientForm.register} errors={patientForm.formState.errors} disabled={!isEditing} required />
-                                    <InputGroup label="Identificación" name="docId" register={patientForm.register} errors={patientForm.formState.errors} disabled={true} required />
-                                    <InputGroup label="Fecha Nacimiento" name="birthDate" type="date" register={patientForm.register} errors={patientForm.formState.errors} disabled={!isEditing} />
-                                    <div>
-                                        <label className="block text-sm font-bold text-gray-700 mb-1.5 font-serif">Edad</label>
-                                        <input type="text" value={`${age} años`} disabled className="w-full px-4 py-2.5 md:py-3 border rounded-xl bg-gray-50 text-gray-500 border-gray-200 cursor-not-allowed text-sm" />
-                                    </div>
-                                    <div>
-                                        <label className="block text-sm font-bold text-gray-700 mb-1.5 font-serif">Género</label>
-                                        <select
-                                            {...patientForm.register("gender")}
-                                            disabled={!isEditing}
-                                            className={clsx(
-                                                "w-full px-4 py-2.5 md:py-3 border rounded-xl outline-none transition-all text-sm",
-                                                !isEditing ? "bg-gray-50 text-gray-500 border-gray-200 cursor-not-allowed" : "bg-white border-gray-300 focus:ring-2 focus:ring-primary/20 focus:border-primary"
-                                            )}
-                                        >
-                                            <option value="">Sin especificar</option>
-                                            <option value="masculino">Masculino</option>
-                                            <option value="femenino">Femenino</option>
-                                            <option value="otro">Otro</option>
-                                        </select>
-                                    </div>
-                                    <InputGroup label="Teléfono" name="phone" register={patientForm.register} errors={patientForm.formState.errors} disabled={!isEditing} />
-                                    <InputGroup label="Email" name="email" type="email" register={patientForm.register} errors={patientForm.formState.errors} disabled={true} />
-                                    <InputGroup label="Ciudad" name="city" register={patientForm.register} errors={patientForm.formState.errors} disabled={!isEditing} />
-                                    <InputGroup label="Dirección" name="address" register={patientForm.register} errors={patientForm.formState.errors} disabled={!isEditing} className="md:col-span-2" />
+                <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
+                    {/* ── Card: Personal Data ─── */}
+                    <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden animate-in fade-in duration-300">
+                        <SectionHeader
+                            title="Datos Personales"
+                            icon={User}
+                            iconColor="text-primary"
+                            gradientFrom="from-primary/10"
+                            gradientTo="to-primary/5"
+                        />
+                        <form onSubmit={(e) => e.preventDefault()} className="p-5 md:p-8">
+                            <div className="grid grid-cols-1 gap-5 md:gap-6">
+                                <InputGroup label="Nombres" name="firstName" register={patientForm.register} errors={patientForm.formState.errors} disabled={!isEditing} required />
+                                <InputGroup label="Apellidos" name="lastName" register={patientForm.register} errors={patientForm.formState.errors} disabled={!isEditing} required />
+                                <InputGroup label="Identificación" name="docId" register={patientForm.register} errors={patientForm.formState.errors} disabled={true} required />
+                                <InputGroup label="Fecha Nacimiento" name="birthDate" type="date" register={patientForm.register} errors={patientForm.formState.errors} disabled={!isEditing} />
+                                <div>
+                                    <label className="block text-sm font-bold text-gray-700 mb-1.5 font-serif">Edad</label>
+                                    <input type="text" value={`${age} años`} disabled className="w-full px-4 py-2.5 md:py-3 border rounded-xl bg-gray-50 text-gray-500 border-gray-200 cursor-not-allowed text-sm" />
                                 </div>
-                            </form>
-                        </div>
-                    )}
-
-                    {/* ── Section: Odontogram ─── */}
-                    {activeTab === 'odontograma' && (
-                        <div className="animate-in fade-in duration-200">
-                            <Odontogram patientId={patientId} readOnly={!isEditing} />
-                            <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-8 mt-6">
-                                <h3 className="text-lg font-serif font-bold text-gray-800 mb-4">Galería de Imágenes</h3>
-                                <OrthodonticGallery patientId={patientId} />
+                                <div>
+                                    <label className="block text-sm font-bold text-gray-700 mb-1.5 font-serif">Género</label>
+                                    <select
+                                        {...patientForm.register("gender")}
+                                        disabled={!isEditing}
+                                        className={clsx(
+                                            "w-full px-4 py-2.5 md:py-3 border rounded-xl outline-none transition-all text-sm",
+                                            !isEditing ? "bg-gray-50 text-gray-500 border-gray-200 cursor-not-allowed" : "bg-white border-gray-300 focus:ring-2 focus:ring-primary/20 focus:border-primary"
+                                        )}
+                                    >
+                                        <option value="">Sin especificar</option>
+                                        <option value="masculino">Masculino</option>
+                                        <option value="femenino">Femenino</option>
+                                        <option value="otro">Otro</option>
+                                    </select>
+                                </div>
+                                <InputGroup label="Teléfono" name="phone" register={patientForm.register} errors={patientForm.formState.errors} disabled={!isEditing} />
+                                <InputGroup label="Email" name="email" type="email" register={patientForm.register} errors={patientForm.formState.errors} disabled={true} />
+                                <InputGroup label="Ciudad" name="city" register={patientForm.register} errors={patientForm.formState.errors} disabled={!isEditing} />
+                                <InputGroup label="Dirección" name="address" register={patientForm.register} errors={patientForm.formState.errors} disabled={!isEditing} className="md:col-span-2" />
                             </div>
-                        </div>
-                    )}
+                        </form>
+                    </div>
 
-                    {/* ── Section: Clinical History Questionnaire ─── */}
-                    {activeTab === 'antecedentes' && (
-                        <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-5 md:p-8 animate-in fade-in zoom-in-95 duration-200 space-y-8">
+
+                    
+                    {/* ── Card: Clinical History Questionnaire ─── */}
+                    <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden animate-in fade-in duration-300">
+                        <SectionHeader
+                            title="Historia Clínica"
+                            icon={Activity}
+                            iconColor="text-blue-600"
+                            gradientFrom="from-blue-50"
+                            gradientTo="to-blue-50/50"
+                        />
+                        <div className="p-5 md:p-8 space-y-8">
 
                             {/* 1. Motivo de consulta */}
                             <div>
@@ -616,19 +585,31 @@ const PatientClinicalView = ({ patientId, navigate }) => {
                                     </div>
                                 </div>
                             </div>
-                        </div>
-                    )}
 
+                        </div>
+                    </div>
                 </div>
+
+
+                
+
+                {/* ── Card: Image Gallery ─── */}
+                <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden animate-in fade-in duration-300">
+                    <SectionHeader
+                        title="Galería de Imágenes"
+                        icon={Layers}
+                        iconColor="text-purple-600"
+                        gradientFrom="from-purple-50"
+                        gradientTo="to-purple-50/50"
+                    />
+                    <div className="p-5 md:p-8">
+                        <OrthodonticGallery patientId={patientId} />
+                    </div>
+                </div>
+
+
             </div>
 
-            {/* Toast */}
-            {showToast && (
-                <div className="fixed bottom-8 right-8 bg-gray-800 text-white px-6 py-3 rounded-lg shadow-lg flex items-center gap-3 animate-in slide-in-from-bottom-4 duration-300 z-50">
-                    <CheckCircle className="text-primary" size={20} />
-                    <span>Datos actualizados correctamente.</span>
-                </div>
-            )}
         </div>
     );
 };
