@@ -7,7 +7,11 @@ import {
     User 
 } from '../types';
 
-// Helper to handle Supabase responses and throw errors if needed
+/**
+ * Maneja respuestas de Supabase y lanza errores si es necesario
+ * @param promise - Promesa de Supabase
+ * @returns Datos o lanza un error
+ */
 async function handleSupabase<T>(promise: PromiseLike<{ data: T | null; error: any }>): Promise<T> {
     const { data, error } = await promise;
     if (error) {
@@ -19,7 +23,30 @@ async function handleSupabase<T>(promise: PromiseLike<{ data: T | null; error: a
     return data as T;
 }
 
-// ── AUTH ───────────────────────────────────────────────────────
+/** Interfaz para registro de usuario */
+interface RegisterInput {
+    email: string;
+    password: string;
+    full_name: string;
+    role?: 'doctor' | 'admin' | 'assistant';
+}
+
+/** Respuesta de registro */
+interface RegisterResponse {
+    user: any;
+    session: any;
+}
+
+/** Respuesta de OTP */
+interface OtpResponse {
+    session: any;
+    user: User;
+}
+
+/**
+ * API de Autenticación
+ * Gestiona login, registro, y autenticación de usuarios
+ */
 export const authAPI = {
     login: async (email: string, password: string): Promise<{ access_token: string; user: User }> => {
         const { data, error } = await supabase.auth.signInWithPassword({
@@ -35,12 +62,13 @@ export const authAPI = {
                 id: data.user.id,
                 email: data.user.email || '',
                 full_name: data.user.user_metadata?.full_name || 'User',
-                role: data.user.user_metadata?.role || 'doctor'
+                role: data.user.user_metadata?.role || 'doctor',
+                is_active: true,
             }
         };
     },
 
-    register: async (userData: any): Promise<any> => {
+    register: async (userData: RegisterInput): Promise<RegisterResponse> => {
         const { data, error } = await supabase.auth.signUp({
             email: userData.email,
             password: userData.password,
@@ -52,7 +80,7 @@ export const authAPI = {
             }
         });
         if (error) throw error;
-        return data;
+        return data as RegisterResponse;
     },
 
     me: async (): Promise<User> => {
@@ -62,7 +90,8 @@ export const authAPI = {
             id: user.id,
             email: user.email || '',
             full_name: user.user_metadata?.full_name || 'User',
-            role: user.user_metadata?.role || 'doctor'
+            role: user.user_metadata?.role || 'doctor',
+            is_active: true,
         };
     },
 
@@ -70,13 +99,13 @@ export const authAPI = {
         const { error } = await supabase.auth.signInWithOtp({
             email,
             options: {
-                shouldCreateUser: false, // Generally for admin portal we don't want auto-registration
+                shouldCreateUser: false,
             }
         });
         if (error) throw error;
     },
 
-    verifyOtp: async (email: string, token: string): Promise<{ session: any; user: User }> => {
+    verifyOtp: async (email: string, token: string): Promise<OtpResponse> => {
         const { data, error } = await supabase.auth.verifyOtp({
             email,
             token,
@@ -91,7 +120,8 @@ export const authAPI = {
                 id: data.user.id,
                 email: data.user.email || '',
                 full_name: data.user.user_metadata?.full_name || 'User',
-                role: data.user.user_metadata?.role || 'doctor'
+                role: data.user.user_metadata?.role || 'doctor',
+                is_active: true,
             }
         };
     },
@@ -102,7 +132,10 @@ export const authAPI = {
     }
 };
 
-// ── PATIENTS ──────────────────────────────────────────────────
+/**
+ * API de Pacientes
+ * Gestiona operaciones CRUD de pacientes
+ */
 export const patientsAPI = {
     list: async (): Promise<Patient[]> => {
         return handleSupabase(
@@ -162,7 +195,7 @@ export const patientsAPI = {
         return null;
     },
 
-    // Clinical History
+    // ── Historia Clínica ──
     getHistory: async (patientId: string): Promise<ClinicalHistory[]> => {
         return handleSupabase(
             supabase
@@ -210,8 +243,8 @@ export const patientsAPI = {
         );
     },
 
-    // Odontogram
-    getOdontogram: async (patientId: string): Promise<any> => {
+    // ── Odontograma ──
+    getOdontogram: async (patientId: string): Promise<Record<string, any> | null> => {
         return handleSupabase(
             supabase
                 .from('odontograms')
@@ -221,7 +254,7 @@ export const patientsAPI = {
         );
     },
 
-    updateOdontogram: async (patientId: string, data: any): Promise<any> => {
+    updateOdontogram: async (patientId: string, data: Record<string, any>): Promise<Record<string, any>> => {
         const { data: existing } = await supabase
             .from('odontograms')
             .select('id')
@@ -249,13 +282,22 @@ export const patientsAPI = {
     },
 };
 
-// ── APPOINTMENTS ──────────────────────────────────────────────
+/**
+ * API de Citas
+ * Gestiona operaciones CRUD de citas médicas
+ */
+interface AppointmentFilters {
+    date?: string;
+    status?: string;
+    doctor_id?: string;
+}
+
 export const appointmentsAPI = {
-    list: async (params: any = {}): Promise<Appointment[]> => {
+    list: async (params: AppointmentFilters = {}): Promise<Appointment[]> => {
         let query = supabase.from('appointments').select('*');
-        
+
         if (params.date) {
-            query = query.eq('appointment_date', params.date);
+            query = query.eq('date', params.date);
         }
         if (params.status) {
             query = query.eq('status', params.status);
@@ -297,7 +339,7 @@ export const appointmentsAPI = {
         return null;
     },
 
-    // Ortho Blocks
+    // ── Bloques de Ortodoncia ──
     listOrthoBlocks: async (): Promise<OrthoBlock[]> => {
         return handleSupabase(
             supabase
@@ -326,22 +368,22 @@ export const appointmentsAPI = {
         return null;
     },
 
-    // Public endpoints
+    // ── Endpoints Públicos ──
     getAvailability: async (date: string): Promise<string[]> => {
-        const appts = await handleSupabase<any[]>(
-            supabase.from('appointments').select('appointment_time').eq('appointment_date', date)
+        const appts = await handleSupabase<Appointment[]>(
+            supabase.from('appointments').select('start_time').eq('date', date)
         );
-        return appts.map(a => a.appointment_time);
+        return appts.map(a => a.start_time);
     },
 
     getGeneralAvailability: async (date: string): Promise<string[]> => {
-        const appts = await handleSupabase<any[]>(
+        const appts = await handleSupabase<Appointment[]>(
             supabase.from('appointments')
-                .select('appointment_time')
-                .eq('appointment_date', date)
-                .eq('appointment_type', 'general')
+                .select('start_time')
+                .eq('date', date)
+                .eq('type', 'general')
         );
-        return appts.map(a => a.appointment_time);
+        return appts.map(a => a.start_time);
     },
 
     getOrthoDates: async (): Promise<{ date: string }[]> => {
@@ -350,22 +392,25 @@ export const appointmentsAPI = {
         );
     },
 
-    publicBookOrtho: async (data: any): Promise<Appointment> => {
+    publicBookOrtho: async (data: Partial<Appointment>): Promise<Appointment> => {
         return handleSupabase(
-            supabase.from('appointments').insert([{ ...data, appointment_type: 'ortodoncia', status: 'pendiente' }]).select().single()
+            supabase.from('appointments').insert([{ ...data, type: 'ortodoncia', status: 'pendiente' }]).select().single()
         );
     },
 
-    publicBookGeneral: async (data: any): Promise<Appointment> => {
+    publicBookGeneral: async (data: Partial<Appointment>): Promise<Appointment> => {
         return handleSupabase(
-            supabase.from('appointments').insert([{ ...data, appointment_type: 'general', status: 'pendiente' }]).select().single()
+            supabase.from('appointments').insert([{ ...data, type: 'general', status: 'pendiente' }]).select().single()
         );
     },
 };
 
-// ── NOTIFICATIONS ─────────────────────────────────────────────
+/**
+ * API de Notificaciones
+ * Gestiona logs y notificaciones
+ */
 export const notificationsAPI = {
-    list: async (): Promise<any[]> => {
+    list: async (): Promise<Record<string, any>[]> => {
         return handleSupabase(
             supabase
                 .from('notification_logs')
@@ -374,7 +419,7 @@ export const notificationsAPI = {
         );
     },
 
-    send: async (data: any): Promise<any> => {
+    send: async (data: Record<string, any>): Promise<Record<string, any>> => {
         return handleSupabase(
             supabase
                 .from('notification_logs')
@@ -384,7 +429,7 @@ export const notificationsAPI = {
         );
     },
 
-    getDoctorNotifications: async (): Promise<any[]> => {
+    getDoctorNotifications: async (): Promise<Record<string, any>[]> => {
         return handleSupabase(
             supabase
                 .from('notification_logs')
@@ -395,7 +440,7 @@ export const notificationsAPI = {
         );
     },
 
-    markAsRead: async (logId: string): Promise<any> => {
+    markAsRead: async (logId: string): Promise<Record<string, any>> => {
         return handleSupabase(
             supabase
                 .from('notification_logs')
@@ -416,5 +461,5 @@ export const notificationsAPI = {
     },
 };
 
-// Legacy export for backward compatibility
+// Compatibilidad con versiones anteriores
 export const api = { auth: authAPI };

@@ -9,26 +9,10 @@ import 'jspdf-autotable';
 import { patientsAPI, notificationsAPI } from '../services/api';
 import { generateInvoicePDF } from '../utils/pdfGenerator';
 import { PageHeader } from '../components/molecules/PageHeader';
+import { SectionHeader } from '../components/molecules/SectionHeader';
+import { useToast } from '../components/atoms';
 
-// Patients will be loaded from API
-
-const MOCK_TREATMENTS = {
-    1: [
-        { id: 't1', name: 'Limpieza Dental Profunda', date: '2026-02-01', price: 120.00 },
-        { id: 't2', name: 'Resina pieza #18', date: '2026-01-20', price: 85.00 },
-        { id: 't3', name: 'Blanqueamiento LED', date: '2026-01-15', price: 350.00 },
-        { id: 't4', name: 'Radiografía Panorámica', date: '2025-12-28', price: 45.00 },
-    ],
-    2: [
-        { id: 't5', name: 'Ortodoncia - Control Mensual', date: '2026-02-05', price: 60.00 },
-        { id: 't6', name: 'Brackets Metálicos (Colocación)', date: '2025-11-10', price: 1200.00 },
-    ],
-    3: [
-        { id: 't7', name: 'Extracción pieza #28', date: '2026-01-30', price: 150.00 },
-        { id: 't8', name: 'Consulta General', date: '2025-12-20', price: 40.00 },
-    ],
-};
-
+/** Métodos de pago disponibles */
 const PAYMENT_METHODS = [
     { id: 'cash', label: 'Efectivo', icon: Banknote },
     { id: 'transfer', label: 'Transferencia', icon: ArrowRight },
@@ -36,9 +20,8 @@ const PAYMENT_METHODS = [
 ];
 
 let invoiceCounter = 1001;
-
-// ── Main Component ────────────────────────────────────────────────────
 const Billing = () => {
+    const { showToast: toast } = useToast();
     // State
     const [selectedPatient, setSelectedPatient] = useState(null);
     const [patientSearch, setPatientSearch] = useState('');
@@ -50,8 +33,6 @@ const Billing = () => {
     const [paymentStatus, setPaymentStatus] = useState('Pagado'); // 'Pagado' or 'Debiendo'
     const [showTreatments, setShowTreatments] = useState(false);
     const [showPreview, setShowPreview] = useState(false);
-    const [showToast, setShowToast] = useState(false);
-    const [toastMsg, setToastMsg] = useState('');
     const [savedInvoices, setSavedInvoices] = useState([]);
 
     // ── Load patients from API ─────────────────────────────────
@@ -134,11 +115,7 @@ const Billing = () => {
         setInvoiceItems(invoiceItems.filter(i => i.id !== id));
     };
 
-    const toast = (msg) => {
-        setToastMsg(msg);
-        setShowToast(true);
-        setTimeout(() => setShowToast(false), 3000);
-    };
+
 
     // ── PDF Generation ──────────────────────────────────────────────
     // ── PDF Generation is externalized to pdfGenerator.js ────────────
@@ -222,8 +199,16 @@ const Billing = () => {
                 <div className="lg:col-span-2 space-y-6">
 
                     {/* Patient Selector */}
-                    <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-4 md:p-6">
-                        <h2 className="text-base md:text-lg font-serif font-bold text-gray-800 mb-4">Seleccionar Paciente</h2>
+                    <div className="bg-white rounded-2xl shadow-sm border border-gray-100">
+                        <SectionHeader
+                            title="Seleccionar Paciente"
+                            icon={User}
+                            iconColor="text-blue-600"
+                            gradientFrom="from-blue-50"
+                            gradientTo="to-blue-50/50"
+                            className="rounded-t-2xl"
+                        />
+                        <div className="p-4 md:p-6">
                         <div className="relative">
                             <div className="flex items-center border border-gray-200 rounded-lg px-3 md:px-4 py-2.5 md:py-3 focus-within:ring-2 focus-within:ring-primary/30 focus-within:border-primary transition-all">
                                 <Search className="text-gray-400 mr-2 md:mr-3" size={18} />
@@ -234,6 +219,7 @@ const Billing = () => {
                                     value={selectedPatient ? `${selectedPatient.firstName} ${selectedPatient.lastName}` : patientSearch}
                                     onChange={(e) => { setPatientSearch(e.target.value); setShowPatientDropdown(true); setSelectedPatient(null); }}
                                     onFocus={() => setShowPatientDropdown(true)}
+                                    onBlur={() => setTimeout(() => setShowPatientDropdown(false), 200)}
                                 />
                                 {selectedPatient && (
                                     <button onClick={() => { setSelectedPatient(null); setInvoiceItems([]); }} className="text-gray-400 hover:text-red-500">
@@ -263,87 +249,29 @@ const Billing = () => {
                                 </div>
                             )}
                         </div>
+                        </div>
                     </div>
 
-                    {/* Patient Debt Info */}
-                    {selectedPatient && (
-                        <div className={`rounded-2xl shadow-sm border p-4 flex flex-col sm:flex-row items-center gap-4 ${selectedPatient.debt > 0 ? 'bg-red-50 border-red-200' : 'bg-green-50 border-green-200'}`}>
-                            <div className="flex items-center gap-4 w-full sm:w-auto">
-                                <div className={`p-3 rounded-xl shrink-0 ${selectedPatient.debt > 0 ? 'bg-red-100' : 'bg-green-100'}`}>
-                                    <DollarSign size={20} className={selectedPatient.debt > 0 ? 'text-red-500' : 'text-green-500'} />
-                                </div>
-                                <div className="flex-1">
-                                    <p className="text-sm font-bold text-gray-800">
-                                        Deuda actual: <span className={selectedPatient.debt > 0 ? 'text-red-600' : 'text-green-600'}>
-                                            ${selectedPatient.debt.toFixed(2)}
-                                        </span>
-                                    </p>
-                                    <p className="text-[10px] md:text-xs text-gray-500">
-                                        {selectedPatient.email
-                                            ? <>Notificación a <span className="font-medium underline decoration-primary/30">{selectedPatient.email}</span></>
-                                            : <span className="text-amber-600 font-semibold">⚠ Sin email registrado</span>
-                                        }
-                                    </p>
-                                </div>
-                            </div>
-                            {selectedPatient.debt > 0 && (
-                                <AlertCircle size={18} className="text-red-400 hidden sm:block ml-auto" />
-                            )}
-                        </div>
-                    )}
 
-                    {selectedPatient && (
-                        <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-4 md:p-6 overflow-hidden">
-                            <button
-                                onClick={() => setShowTreatments(!showTreatments)}
-                                className="w-full flex items-center justify-between text-left"
-                            >
-                                <h2 className="text-base md:text-lg font-serif font-bold text-gray-800">Historia Clínica (Tratamientos)</h2>
-                                <ChevronDown className={`text-gray-400 transform transition-transform ${showTreatments ? 'rotate-180' : ''}`} size={20} />
-                            </button>
-                            {showTreatments && (
-                                <div className="mt-4 space-y-2 animate-in slide-in-from-top-2 duration-200">
-                                    {availableTreatments.length === 0 ? (
-                                        <p className="text-gray-400 text-sm text-center py-4">No hay tratamientos registrados.</p>
-                                    ) : availableTreatments.map(t => {
-                                        const alreadyAdded = invoiceItems.some(i => i.treatmentId === t.id);
-                                        return (
-                                            <div
-                                                key={t.id}
-                                                className={`flex items-center justify-between p-3 rounded-xl border transition-all ${alreadyAdded ? 'bg-green-50/50 border-green-200' : 'border-gray-100 hover:border-primary/30 hover:bg-primary/5'}`}
-                                            >
-                                                <div className="min-w-0 pr-2">
-                                                    <p className="font-bold text-gray-800 text-sm truncate">{t.name}</p>
-                                                    <p className="text-[10px] text-gray-400">{t.date} · ${t.price.toFixed(2)}</p>
-                                                </div>
-                                                <button
-                                                    onClick={() => addTreatmentToInvoice(t)}
-                                                    disabled={alreadyAdded}
-                                                    className={`px-3 py-1.5 rounded-lg text-xs font-bold shrink-0 transition-all ${alreadyAdded
-                                                        ? 'bg-green-100 text-green-600'
-                                                        : 'bg-primary/10 text-primary hover:bg-primary hover:text-white'}`}
-                                                >
-                                                    {alreadyAdded ? 'Añadido' : '+ Agregar'}
-                                                </button>
-                                            </div>
-                                        );
-                                    })}
-                                </div>
-                            )}
-                        </div>
-                    )}
 
                     {/* Invoice Items Table */}
-                    <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-4 md:p-6 overflow-hidden">
-                        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-6">
-                            <h2 className="text-base md:text-lg font-serif font-bold text-gray-800">Detalle de Factura</h2>
-                            <button
-                                onClick={addCustomItem}
-                                className="w-full sm:w-auto bg-primary/10 hover:bg-primary text-primary hover:text-white px-4 py-2.5 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-2"
-                            >
-                                <Plus size={16} /> Ítem Manual
-                            </button>
-                        </div>
+                    <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
+                        <SectionHeader
+                            title="Detalle de Factura"
+                            icon={ClipboardList}
+                            iconColor="text-primary"
+                            gradientFrom="from-primary/10"
+                            gradientTo="to-primary/5"
+                            action={
+                                <button
+                                    onClick={addCustomItem}
+                                    className="w-full sm:w-auto bg-primary/10 hover:bg-primary text-primary hover:text-white px-4 py-2 md:py-2.5 rounded-xl text-xs md:text-sm font-bold transition-all flex items-center justify-center gap-2"
+                                >
+                                    <Plus size={16} /> Ítem Manual
+                                </button>
+                            }
+                        />
+                        <div className="p-4 md:p-6">
 
                         {invoiceItems.length === 0 ? (
                             <div className="text-center py-12 text-gray-300">
@@ -475,6 +403,7 @@ const Billing = () => {
                                 </div>
                             </div>
                         )}
+                        </div>
                     </div>
                 </div>
 
@@ -482,8 +411,15 @@ const Billing = () => {
                 <div className="space-y-6">
 
                     {/* Financial Summary Card */}
-                    <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6 sticky lg:top-20 transition-all hover:shadow-md">
-                        <h2 className="text-lg font-serif font-bold text-gray-800 mb-5">Resumen de Cuenta</h2>
+                    <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden sticky lg:top-20 transition-all hover:shadow-md">
+                        <SectionHeader
+                            title="Resumen de Cuenta"
+                            icon={Receipt}
+                            iconColor="text-purple-600"
+                            gradientFrom="from-purple-50"
+                            gradientTo="to-purple-50/50"
+                        />
+                        <div className="p-6">
 
                         <div className="grid grid-cols-2 gap-4 mb-6">
                             {/* Tax Rate */}
@@ -606,13 +542,20 @@ const Billing = () => {
                                 <span>{sendingNotification ? 'Notificando...' : 'Generar Factura'}</span>
                             </button>
                         </div>
+                        </div>
                     </div>
 
                     {/* Recent Invoices */}
                     {savedInvoices.length > 0 && (
-                        <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
-                            <h3 className="text-sm font-serif font-bold text-gray-800 mb-3">Facturas Recientes</h3>
-                            <div className="space-y-2">
+                        <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
+                            <SectionHeader
+                                title="Facturas Recientes"
+                                icon={FileText}
+                                iconColor="text-gray-600"
+                                gradientFrom="from-gray-50"
+                                gradientTo="to-gray-50/50"
+                            />
+                            <div className="p-6 space-y-2">
                                 {savedInvoices.slice(0, 5).map(inv => (
                                     <div key={inv.id} className="flex items-center justify-between p-2 rounded-lg hover:bg-gray-50 transition-colors">
                                         <div>
@@ -734,13 +677,6 @@ const Billing = () => {
                 </div>
             )}
 
-            {/* ─── Toast ──────────────────────────────────────────────── */}
-            {showToast && (
-                <div className="fixed bottom-8 right-8 bg-gray-800 text-white px-6 py-3 rounded-lg shadow-lg flex items-center gap-3 animate-in slide-in-from-bottom-4 duration-300 z-50">
-                    <CheckCircle className="text-primary" size={20} />
-                    <span>{toastMsg}</span>
-                </div>
-            )}
         </div>
     );
 };
