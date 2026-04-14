@@ -69,11 +69,16 @@ const OrthodonticsBooking = () => {
         try {
             const dateStr = format(selectedDate, 'yyyy-MM-dd');
             await appointmentsAPI.publicBookOrtho({
+                patient_id: undefined, // Public booking - no auth
                 date: dateStr,
-                time: selectedTime,
+                start_time: selectedTime,
+                end_time: selectedTime, // Will be calculated server-side or updated later
                 full_name: formData.name,
                 phone: formData.phone,
-                email: formData.email
+                email: formData.email,
+                reason: 'Ortodoncia',
+                type: 'ortodoncia',
+                status: 'pendiente'
             });
             setStep(3);
         } catch (error) {

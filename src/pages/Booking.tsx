@@ -56,13 +56,16 @@ const Booking = () => {
         setIsSubmitting(true);
         try {
             const appointmentData = {
+                patient_id: undefined, // Public booking - no auth
                 full_name: formData.name,
                 email: formData.email,
                 phone: formData.phone,
                 date: format(selectedDate, 'yyyy-MM-dd'),
-                time: selectedTime,
-                service: selectedService?.name,
-                reason: formData.reason
+                start_time: selectedTime,
+                end_time: selectedTime, // Will be calculated server-side or updated later
+                reason: selectedService?.name || 'General',
+                type: 'general',
+                status: 'pendiente'
             };
 
             // Call real API Endpoint
