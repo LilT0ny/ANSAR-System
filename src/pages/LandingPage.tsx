@@ -6,7 +6,26 @@ import useConfigStore from '../store/useConfigStore';
 
 const LandingPage = () => {
     const navigate = useNavigate();
-    const { clinicName, logoUrl, primaryColor, doctorName, specialty, email, phone, address, services } = useConfigStore();
+    const { clinicName, logoUrl, primaryColor, doctorName, specialty, email, phone, address, services, schedule } = useConfigStore();
+
+    const getScheduleDisplay = () => {
+        if (!schedule) return 'Horario no configurado';
+        
+        const daysOfWeek = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'];
+        const dayNames = ['Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb', 'Dom'];
+        
+        const enabledDays = daysOfWeek
+            .map((day, idx) => {
+                const daySchedule = schedule[day];
+                if (daySchedule?.enabled) {
+                    return `${dayNames[idx]}: ${daySchedule.open} - ${daySchedule.close}`;
+                }
+                return null;
+            })
+            .filter(Boolean);
+        
+        return enabledDays.length > 0 ? enabledDays.join(' | ') : 'Horario no disponible';
+    };
 
     return (
         <div className="font-sans text-secondary">
@@ -146,7 +165,7 @@ const LandingPage = () => {
                                 </div>
                                 <div className="flex items-center space-x-4">
                                     <div className="bg-white p-3 rounded-full shadow-sm text-primary"><Clock /></div>
-                                    <p className="text-lg">Horario personalizado configurado en la clínica</p>
+                                    <p className="text-lg text-sm md:text-base">{getScheduleDisplay()}</p>
                                 </div>
                             </div>
                         </div>
