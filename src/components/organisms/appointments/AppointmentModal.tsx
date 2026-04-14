@@ -20,7 +20,8 @@ const AppointmentModal = ({
         date: format(new Date(), 'yyyy-MM-dd'),
         start: '09:00',
         end: '10:00',
-        type: 'Consulta General',
+        type: 'general',
+        reason: '',
         status: 'pendiente',
         sendWhatsApp: true,
     });
@@ -35,6 +36,7 @@ const AppointmentModal = ({
                 date: format(initialDate, 'yyyy-MM-dd'),
                 patient: '',
                 patientId: null,
+                reason: '',
                 start: '09:00',
                 end: '10:00'
             }));
@@ -47,7 +49,7 @@ const AppointmentModal = ({
     );
 
     const handleCreateEvent = async () => {
-        if (!newEvent.patient || !newEvent.date || !newEvent.start || !newEvent.end) {
+        if (!newEvent.patient || !newEvent.date || !newEvent.start || !newEvent.end || !newEvent.reason) {
             toast('Completa todos los campos requeridos.');
             return;
         }
@@ -62,8 +64,8 @@ const AppointmentModal = ({
                 date: newEvent.date,
                 start_time: newEvent.start,
                 end_time: newEvent.end,
-                reason: newEvent.type,
-                type: newEvent.type === 'Ortodoncia' ? 'ortodoncia' : 'general',
+                reason: newEvent.reason,
+                type: newEvent.type,
                 status: 'pendiente'
             });
 
@@ -132,6 +134,16 @@ const AppointmentModal = ({
                                 </div>
                             )}
                         </div>
+                    </div>
+                    <div>
+                        <label className="block text-sm font-bold mb-1">Servicio a Realizar</label>
+                        <input
+                            type="text"
+                            placeholder="Ej: Limpieza, Empaste, Extracción, Ortodoncia..."
+                            value={newEvent.reason}
+                            onChange={e => setNewEvent({ ...newEvent, reason: e.target.value })}
+                            className="w-full border border-gray-200 rounded-xl px-4 py-2 text-sm focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none"
+                        />
                     </div>
                     <div className="grid grid-cols-2 gap-4">
                         <div>
