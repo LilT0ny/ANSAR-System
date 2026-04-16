@@ -5,25 +5,17 @@ import clsx from 'clsx';
 import {
     User, FileText, Activity, Layers, Edit2, Save, X, ArrowLeft,
     CheckCircle, AlertCircle, Calendar, Phone, Mail, MapPin, Briefcase,
-    Loader2, Search, Users, Download
+    Loader2, Search, Users, Download, Clock
 } from 'lucide-react';
-import Odontogram from '../components/Odontogram';
-import OrthodonticGallery from '../components/OrthodonticGallery';
-import { patientsAPI } from '../services/api';
+import { Odontogram, OrthodonticGallery } from '../components/organisms';
+import { patientsAPI, serviceHistoryAPI, appointmentsAPI } from '../services/api';
+import Badge from '../components/atoms/Badge';
+import { calculateAge } from '../utils';
 import generateClinicalHistoryPDF from '../utils/clinicalHistoryPDF';
 import generateFormPDF from '../utils/formPDF';
 import generateCertificatePDF from '../utils/certificatePDF';
-
-// ── Age calculation helper ────────────────────────────────────
-const calculateAge = (birthDate) => {
-    if (!birthDate) return '—';
-    const today = new Date();
-    const birth = new Date(birthDate);
-    let age = today.getFullYear() - birth.getFullYear();
-    const m = today.getMonth() - birth.getMonth();
-    if (m < 0 || (m === 0 && today.getDate() < birth.getDate())) age--;
-    return age;
-};
+import { PageHeader, SectionHeader } from '../components/molecules';
+import { useToast } from '../components/atoms';
 
 
 // ═══════════════════════════════════════════════════════════════
@@ -92,26 +84,23 @@ const PatientSelectionScreen = ({ navigate }) => {
     return (
         <div className="space-y-4 md:space-y-6 animate-in fade-in duration-300">
             {/* Header */}
-            <div>
-                <h1 className="text-2xl md:text-3xl font-bold text-gray-800">Historia Clínica</h1>
-                <p className="text-gray-500 text-sm mt-1">Selecciona un paciente</p>
-            </div>
+            <PageHeader 
+                title="Historia Clínica"
+                subtitle="Selecciona un paciente"
+            />
 
             {/* Selection Card */}
             <div className="bg-white rounded-xl shadow-sm overflow-hidden">
 
                 {/* Info Banner */}
-                <div className="bg-primary/5 px-4 md:px-6 py-4 border-b border-gray-100">
-                    <div className="flex items-center gap-3">
-                        <div className="h-10 w-10 rounded-lg bg-primary/10 flex items-center justify-center">
-                            <Users className="text-primary" size={18} />
-                        </div>
-                        <div>
-                            <h2 className="text-base font-bold text-gray-800">Buscar Paciente</h2>
-                            <p className="text-xs text-gray-500">Por nombre, cédula o teléfono</p>
-                        </div>
-                    </div>
-                </div>
+                <SectionHeader
+                    title="Buscar Paciente"
+                    description="Por nombre, cédula o teléfono"
+                    icon={User}
+                    iconColor="text-primary"
+                    gradientFrom="from-primary/10"
+                    gradientTo="to-primary/5"
+                />
 
                 {/* Search Input */}
                 <div className="p-4 border-b border-gray-100">
@@ -210,11 +199,13 @@ const PatientSelectionScreen = ({ navigate }) => {
 // PATIENT CLINICAL VIEW (when ID is present)
 // ═══════════════════════════════════════════════════════════════
 const PatientClinicalView = ({ patientId, navigate }) => {
+    const { showToast } = useToast();
     const [isEditing, setIsEditing] = useState(false);
     const [activeTab, setActiveTab] = useState('datos');
-    const [showToast, setShowToast] = useState(false);
     const [patient, setPatient] = useState(null);
     const [clinicalData, setClinicalData] = useState(null);
+    const [serviceHistory, setServiceHistory] = useState([]);
+    const [appointments, setAppointments] = useState([]);
     const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState(false);
     const [error, setError] = useState(null);
@@ -257,6 +248,24 @@ const PatientClinicalView = ({ patientId, navigate }) => {
             } catch (e) {
                 console.log('No clinical history found:', e.message);
             }
+
+            // Fetch service history / atenciones
+            try {
+                const history = await serviceHistoryAPI.list(patientId);
+                setServiceHistory(history || []);
+            } catch (e) {
+                console.log('No service history found:', e.message);
+                setServiceHistory([]);
+            }
+
+            // Fetch appointments history
+            try {
+                const appts = await appointmentsAPI.getByPatientId(patientId);
+                setAppointments(appts || []);
+            } catch (e) {
+                console.log('No appointments found:', e.message);
+                setAppointments([]);
+            }
         } catch (err) {
             console.error('Error fetching patient:', err);
             const msg = typeof err === 'object' ? (err.message || 'Error al cargar paciente') : String(err);
@@ -288,8 +297,7 @@ const PatientClinicalView = ({ patientId, navigate }) => {
             };
             await patientsAPI.update(patientId, apiData);
             setIsEditing(false);
-            setShowToast(true);
-            setTimeout(() => setShowToast(false), 3000);
+            showToast('Datos del paciente guardados correctamente.', 'success');
             await fetchData();
         } catch (err) {
             const msg = typeof err === 'object' ? (err.message || 'Error al guardar') : String(err);
@@ -307,8 +315,7 @@ const PatientClinicalView = ({ patientId, navigate }) => {
             const { id: _id, patient_id: _pid, created_at: _ca, updated_at: _ua, created_by: _cb, ...cleanData } = data;
             await patientsAPI.upsertHistory(patientId, cleanData);
             setIsEditing(false);
-            setShowToast(true);
-            setTimeout(() => setShowToast(false), 3000);
+            showToast('Historia clínica actualizada correctamente.', 'success');
             await fetchData();
         } catch (err) {
             const msg = typeof err === 'object' ? (err.message || 'Error al guardar historia clínica') : String(err);
@@ -444,91 +451,74 @@ const PatientClinicalView = ({ patientId, navigate }) => {
                     </div>
                 )}
 
-                {isEditing && (
-                    <div className="mt-4 bg-primary/5 border border-primary/20 rounded-xl px-4 py-3 flex items-center gap-3 text-xs md:text-sm text-primary font-bold animate-in slide-in-from-top-2">
-                        <Edit2 size={16} />
-                        Modo edición activo. Recuerda guardar tus cambios.
-                    </div>
-                )}
             </div>
 
-            {/* ─── Content Layout ─── */}
-            <div className="flex gap-6 md:gap-8 flex-col lg:flex-row">
+            {/* ─── Content: Stacked Cards ─── */}
+            <div className="space-y-6">
 
-                {/* Tabs */}
-                <div className="w-full lg:w-64 shrink-0 overflow-x-auto lg:overflow-visible flex lg:flex-col gap-2 pb-2 lg:pb-0 scrollbar-none scroll-smooth">
-                    {tabs.map(tab => (
-                        <button type="button" key={tab.id} onClick={() => setActiveTab(tab.id)}
-                            className={clsx(
-                                "flex-1 lg:flex-none whitespace-nowrap text-left px-5 py-3.5 md:py-4 rounded-xl flex items-center justify-center lg:justify-start gap-3 transition-all duration-300 font-bold text-sm",
-                                activeTab === tab.id
-                                    ? "bg-primary text-white shadow-lg shadow-primary/25"
-                                    : "bg-white text-gray-500 hover:bg-gray-100 border border-gray-100 lg:border-transparent hover:border-gray-200"
-                            )}>
-                            <tab.icon size={18} className={activeTab === tab.id ? "text-white" : "text-gray-400"} />
-                            <span>{tab.label}</span>
-                        </button>
-                    ))}
+                
+
+                {/* ── Card: Odontogram ─── */}
+                <div className="animate-in fade-in duration-300">
+                    <Odontogram patientId={patientId} readOnly={!isEditing} />
                 </div>
 
-                {/* Content Area */}
-                <div className="flex-1 min-h-[600px]">
-
-                    {/* ── Section: Personal Data ─── */}
-                    {activeTab === 'datos' && (
-                        <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-5 md:p-8 animate-in fade-in zoom-in-95 duration-200">
-                            <h2 className="text-lg md:text-xl font-serif font-bold text-gray-800 mb-6 flex items-center gap-2 pb-4 border-b border-gray-100">
-                                <User className="text-primary" size={20} /> Datos Personales
-                            </h2>
-                            <form onSubmit={(e) => e.preventDefault()}>
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-5 md:gap-6">
-                                    <InputGroup label="Nombres" name="firstName" register={patientForm.register} errors={patientForm.formState.errors} disabled={!isEditing} required />
-                                    <InputGroup label="Apellidos" name="lastName" register={patientForm.register} errors={patientForm.formState.errors} disabled={!isEditing} required />
-                                    <InputGroup label="Identificación" name="docId" register={patientForm.register} errors={patientForm.formState.errors} disabled={true} required />
-                                    <InputGroup label="Fecha Nacimiento" name="birthDate" type="date" register={patientForm.register} errors={patientForm.formState.errors} disabled={!isEditing} />
-                                    <div>
-                                        <label className="block text-sm font-bold text-gray-700 mb-1.5 font-serif">Edad</label>
-                                        <input type="text" value={`${age} años`} disabled className="w-full px-4 py-2.5 md:py-3 border rounded-xl bg-gray-50 text-gray-500 border-gray-200 cursor-not-allowed text-sm" />
-                                    </div>
-                                    <div>
-                                        <label className="block text-sm font-bold text-gray-700 mb-1.5 font-serif">Género</label>
-                                        <select
-                                            {...patientForm.register("gender")}
-                                            disabled={!isEditing}
-                                            className={clsx(
-                                                "w-full px-4 py-2.5 md:py-3 border rounded-xl outline-none transition-all text-sm",
-                                                !isEditing ? "bg-gray-50 text-gray-500 border-gray-200 cursor-not-allowed" : "bg-white border-gray-300 focus:ring-2 focus:ring-primary/20 focus:border-primary"
-                                            )}
-                                        >
-                                            <option value="">Sin especificar</option>
-                                            <option value="masculino">Masculino</option>
-                                            <option value="femenino">Femenino</option>
-                                            <option value="otro">Otro</option>
-                                        </select>
-                                    </div>
-                                    <InputGroup label="Teléfono" name="phone" register={patientForm.register} errors={patientForm.formState.errors} disabled={!isEditing} />
-                                    <InputGroup label="Email" name="email" type="email" register={patientForm.register} errors={patientForm.formState.errors} disabled={true} />
-                                    <InputGroup label="Ciudad" name="city" register={patientForm.register} errors={patientForm.formState.errors} disabled={!isEditing} />
-                                    <InputGroup label="Dirección" name="address" register={patientForm.register} errors={patientForm.formState.errors} disabled={!isEditing} className="md:col-span-2" />
+                <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
+                    {/* ── Card: Personal Data ─── */}
+                    <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden animate-in fade-in duration-300">
+                        <SectionHeader
+                            title="Datos Personales"
+                            icon={User}
+                            iconColor="text-primary"
+                            gradientFrom="from-primary/10"
+                            gradientTo="to-primary/5"
+                        />
+                        <form onSubmit={(e) => e.preventDefault()} className="p-5 md:p-8">
+                            <div className="grid grid-cols-1 gap-5 md:gap-6">
+                                <InputGroup label="Nombres" name="firstName" register={patientForm.register} errors={patientForm.formState.errors} disabled={!isEditing} required />
+                                <InputGroup label="Apellidos" name="lastName" register={patientForm.register} errors={patientForm.formState.errors} disabled={!isEditing} required />
+                                <InputGroup label="Identificación" name="docId" register={patientForm.register} errors={patientForm.formState.errors} disabled={true} required />
+                                <InputGroup label="Fecha Nacimiento" name="birthDate" type="date" register={patientForm.register} errors={patientForm.formState.errors} disabled={!isEditing} />
+                                <div>
+                                    <label className="block text-sm font-bold text-gray-700 mb-1.5 font-serif">Edad</label>
+                                    <input type="text" value={`${age} años`} disabled className="w-full px-4 py-2.5 md:py-3 border rounded-xl bg-gray-50 text-gray-500 border-gray-200 cursor-not-allowed text-sm" />
                                 </div>
-                            </form>
-                        </div>
-                    )}
-
-                    {/* ── Section: Odontogram ─── */}
-                    {activeTab === 'odontograma' && (
-                        <div className="animate-in fade-in duration-200">
-                            <Odontogram patientId={patientId} readOnly={!isEditing} />
-                            <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-8 mt-6">
-                                <h3 className="text-lg font-serif font-bold text-gray-800 mb-4">Galería de Imágenes</h3>
-                                <OrthodonticGallery patientId={patientId} />
+                                <div>
+                                    <label className="block text-sm font-bold text-gray-700 mb-1.5 font-serif">Género</label>
+                                    <select
+                                        {...patientForm.register("gender")}
+                                        disabled={!isEditing}
+                                        className={clsx(
+                                            "w-full px-4 py-2.5 md:py-3 border rounded-xl outline-none transition-all text-sm",
+                                            !isEditing ? "bg-gray-50 text-gray-500 border-gray-200 cursor-not-allowed" : "bg-white border-gray-300 focus:ring-2 focus:ring-primary/20 focus:border-primary"
+                                        )}
+                                    >
+                                        <option value="">Sin especificar</option>
+                                        <option value="masculino">Masculino</option>
+                                        <option value="femenino">Femenino</option>
+                                        <option value="otro">Otro</option>
+                                    </select>
+                                </div>
+                                <InputGroup label="Teléfono" name="phone" register={patientForm.register} errors={patientForm.formState.errors} disabled={!isEditing} />
+                                <InputGroup label="Email" name="email" type="email" register={patientForm.register} errors={patientForm.formState.errors} disabled={true} />
+                                <InputGroup label="Ciudad" name="city" register={patientForm.register} errors={patientForm.formState.errors} disabled={!isEditing} />
+                                <InputGroup label="Dirección" name="address" register={patientForm.register} errors={patientForm.formState.errors} disabled={!isEditing} className="md:col-span-2" />
                             </div>
-                        </div>
-                    )}
+                        </form>
+                    </div>
 
-                    {/* ── Section: Clinical History Questionnaire ─── */}
-                    {activeTab === 'antecedentes' && (
-                        <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-5 md:p-8 animate-in fade-in zoom-in-95 duration-200 space-y-8">
+
+                    
+                    {/* ── Card: Clinical History Questionnaire ─── */}
+                    <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden animate-in fade-in duration-300">
+                        <SectionHeader
+                            title="Historia Clínica"
+                            icon={Activity}
+                            iconColor="text-blue-600"
+                            gradientFrom="from-blue-50"
+                            gradientTo="to-blue-50/50"
+                        />
+                        <div className="p-5 md:p-8 space-y-8">
 
                             {/* 1. Motivo de consulta */}
                             <div>
@@ -615,19 +605,177 @@ const PatientClinicalView = ({ patientId, navigate }) => {
                                     </div>
                                 </div>
                             </div>
-                        </div>
-                    )}
 
+                        </div>
+                    </div>
                 </div>
+
+
+                
+
+                {/* ── Card: Image Gallery ─── */}
+                <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden animate-in fade-in duration-300">
+                    <SectionHeader
+                        title="Galería de Imágenes"
+                        icon={Layers}
+                        iconColor="text-purple-600"
+                        gradientFrom="from-purple-50"
+                        gradientTo="to-purple-50/50"
+                    />
+                    <div className="p-5 md:p-8">
+                        <OrthodonticGallery patientId={patientId} />
+                    </div>
+                </div>
+
+
+                {/* ── Card: Service History / Atenciones ─── */}
+                {serviceHistory && serviceHistory.length > 0 && (
+                    <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden animate-in fade-in duration-300">
+                        <SectionHeader
+                            title="Historial de Atenciones"
+                            icon={FileText}
+                            iconColor="text-green-600"
+                            gradientFrom="from-green-50"
+                            gradientTo="to-green-50/50"
+                        />
+                        <div className="p-5 md:p-8">
+                            <div className="space-y-3 max-h-96 overflow-y-auto">
+                                {serviceHistory.map((service, idx) => (
+                                    <div key={service.id || idx} className="p-4 border border-gray-200 rounded-xl hover:border-primary/30 hover:bg-primary/5 transition-all">
+                                        <div className="flex items-start justify-between gap-4">
+                                            <div className="flex-1">
+                                                <div className="flex items-center gap-2 mb-2">
+                                                    <span className="font-bold text-primary text-sm">{service.invoice_number}</span>
+                                                    <span className="text-xs text-gray-400">{new Date(service.created_at).toLocaleDateString('es-ES', { 
+                                                        year: 'numeric', 
+                                                        month: 'short', 
+                                                        day: 'numeric',
+                                                        hour: '2-digit',
+                                                        minute: '2-digit'
+                                                    })}</span>
+                                                </div>
+                                                <div className="text-sm space-y-1">
+                                                    <p><span className="text-gray-500">Subtotal:</span> <span className="font-semibold">${service.subtotal?.toFixed(2) || '0.00'}</span></p>
+                                                    <p><span className="text-gray-500">Descuento:</span> <span className="font-semibold text-red-600">-${service.discount?.toFixed(2) || '0.00'}</span></p>
+                                                    <p><span className="text-gray-500">Total:</span> <span className="font-serif font-bold text-lg text-primary">${service.total?.toFixed(2) || '0.00'}</span></p>
+                                                    <p><span className="text-gray-500">Pagado:</span> <span className="font-semibold text-green-600">${service.payment_amount?.toFixed(2) || '0.00'}</span></p>
+                                                    {service.debt > 0 ? (
+                                                        <p><span className="text-gray-500">Deuda:</span> <span className="font-semibold text-orange-600">${service.debt?.toFixed(2) || '0.00'}</span></p>
+                                                    ) : service.debt < 0 ? (
+                                                        <p><span className="text-gray-500">Crédito:</span> <span className="font-semibold text-blue-600">${Math.abs(service.debt).toFixed(2) || '0.00'}</span></p>
+                                                    ) : null}
+                                                    <p><span className="text-gray-500">Método:</span> <span className="font-semibold text-sm capitalize">{service.payment_method || 'N/A'}</span></p>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+                            {serviceHistory.length === 0 && (
+                                <p className="text-center text-gray-400 text-sm">Sin atenciones registradas</p>
+                            )}
+                        </div>
+                    </div>
+                )}
+
+                {/* ── Card: Appointments History ─── */}
+                {appointments && appointments.length > 0 && (
+                    <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden animate-in fade-in duration-300">
+                        <SectionHeader
+                            title="Historial de Citas"
+                            icon={Calendar}
+                            iconColor="text-orange-600"
+                            gradientFrom="from-orange-50"
+                            gradientTo="to-orange-50/50"
+                        />
+                        <div className="p-5 md:p-8">
+                            <div className="space-y-3 max-h-96 overflow-y-auto">
+                                {appointments.map((appointment, idx) => (
+                                    <div 
+                                        key={appointment.id || idx} 
+                                        className="p-4 border border-gray-200 rounded-xl hover:border-orange-300/50 hover:bg-orange-50/30 transition-all"
+                                    >
+                                        <div className="flex items-start justify-between gap-4">
+                                            <div className="flex-1">
+                                                {/* Date and Time */}
+                                                <div className="flex items-center gap-3 mb-3 pb-3 border-b border-gray-100">
+                                                    <Calendar className="text-orange-500" size={18} />
+                                                    <div className="flex-1">
+                                                        <p className="font-semibold text-gray-800 text-sm">
+                                                            {new Date(appointment.date).toLocaleDateString('es-ES', {
+                                                                weekday: 'long',
+                                                                year: 'numeric',
+                                                                month: 'long',
+                                                                day: 'numeric',
+                                                            })}
+                                                        </p>
+                                                        <div className="flex items-center gap-2 mt-1">
+                                                            <Clock size={14} className="text-gray-400" />
+                                                            <p className="text-xs text-gray-500">
+                                                                {appointment.start_time} - {appointment.end_time}
+                                                            </p>
+                                                        </div>
+                                                    </div>
+                                                </div>
+
+                                                {/* Appointment Details */}
+                                                <div className="text-sm space-y-2">
+                                                    <p>
+                                                        <span className="text-gray-500">Tipo:</span>{' '}
+                                                        <Badge 
+                                                            variant={appointment.type === 'general' ? 'info' : 'neutral'}
+                                                            size="sm"
+                                                        >
+                                                            {appointment.type === 'general' ? 'General' : 'Ortodoncia'}
+                                                        </Badge>
+                                                    </p>
+                                                    <p>
+                                                        <span className="text-gray-500">Motivo:</span>{' '}
+                                                        <span className="font-semibold">{appointment.reason || 'N/A'}</span>
+                                                    </p>
+                                                    <p>
+                                                        <span className="text-gray-500">Estado:</span>{' '}
+                                                        <Badge 
+                                                            variant={
+                                                                appointment.status === 'completada' ? 'success' :
+                                                                appointment.status === 'confirmada' ? 'info' :
+                                                                appointment.status === 'pendiente' ? 'warning' : 'danger'
+                                                            }
+                                                            size="sm"
+                                                        >
+                                                            {appointment.status.charAt(0).toUpperCase() + appointment.status.slice(1)}
+                                                        </Badge>
+                                                    </p>
+                                                    <p>
+                                                        <span className="text-gray-500">Asistencia:</span>{' '}
+                                                        <Badge 
+                                                            variant={appointment.attended ? 'success' : 'neutral'}
+                                                            size="sm"
+                                                        >
+                                                            {appointment.attended ? 'Asistió' : 'No asistió'}
+                                                        </Badge>
+                                                    </p>
+                                                    {appointment.notes && (
+                                                        <div className="mt-3 p-3 bg-gray-50 rounded-lg border border-gray-200">
+                                                            <p className="text-xs font-semibold text-gray-600 mb-1">Notas:</p>
+                                                            <p className="text-xs text-gray-600 break-words">{appointment.notes}</p>
+                                                        </div>
+                                                    )}
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+                            {appointments.length === 0 && (
+                                <p className="text-center text-gray-400 text-sm">Sin citas registradas</p>
+                            )}
+                        </div>
+                    </div>
+                )}
+
             </div>
 
-            {/* Toast */}
-            {showToast && (
-                <div className="fixed bottom-8 right-8 bg-gray-800 text-white px-6 py-3 rounded-lg shadow-lg flex items-center gap-3 animate-in slide-in-from-bottom-4 duration-300 z-50">
-                    <CheckCircle className="text-primary" size={20} />
-                    <span>Datos actualizados correctamente.</span>
-                </div>
-            )}
         </div>
     );
 };

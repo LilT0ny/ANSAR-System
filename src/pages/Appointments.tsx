@@ -1,10 +1,11 @@
 import React, { useState, useEffect, useLayoutEffect, useRef, useCallback } from 'react';
 import {
-    Calendar as CalendarIcon, CheckCircle, XCircle,
-    ChevronLeft, ChevronRight, Clock, Plus, X, User,
-    MoreVertical, AlertCircle, Settings, Link2, Copy,
-    Trash2, ShieldCheck, Mail, Loader2, Activity
+    CalendarDays, ChevronLeft, ChevronRight, Plus, X, User,
+    ShieldCheck, Mail, Loader2, Activity
 } from 'lucide-react';
+import { PageHeader } from '../components/molecules';
+import { SectionHeader } from '../components/molecules';
+import { useToast } from '../components/atoms';
 import {
     format, isSameDay, parseISO, startOfWeek,
     endOfWeek, eachDayOfInterval,
@@ -15,9 +16,7 @@ import { DayPicker } from 'react-day-picker';
 import 'react-day-picker/style.css';
 import { clsx } from 'clsx';
 import { patientsAPI, appointmentsAPI } from '../services/api';
-import DaySummarySidebar from '../components/appointments/DaySummarySidebar';
-import AppointmentGridItem from '../components/appointments/AppointmentGridItem';
-import AppointmentModal from '../components/appointments/AppointmentModal';
+import { DaySummarySidebar, AppointmentGridItem, AppointmentModal } from '../components/organisms/appointments';
 
 // ── Treatment Types ───────────────────────────────────────────
 const TREATMENT_TYPES = [
@@ -34,12 +33,11 @@ const TREATMENT_TYPES = [
 
 // ── Component ─────────────────────────────────────────────────
 const Appointments = () => {
+    const { showToast } = useToast();
     const [selectedDate, setSelectedDate] = useState(new Date());
     const [viewMode, setViewMode] = useState('week'); // 'day' | 'week'
     const [currentTime, setCurrentTime] = useState(new Date());
     const [showCreateModal, setShowCreateModal] = useState(false);
-    const [showToast, setShowToast] = useState(false);
-    const [toastMsg, setToastMsg] = useState('');
 
     // ── API-loaded patients ───────────────────────────────────
     const [apiPatients, setApiPatients] = useState([]);
@@ -107,24 +105,33 @@ const Appointments = () => {
     const fetchData = useCallback(async () => {
         setLoadingData(true);
         try {
-            const [appts, blocks] = await Promise.all([
-                appointmentsAPI.list(),
-                appointmentsAPI.listOrthoBlocks()
-            ]);
+            // Fetch appointments — required; let errors propagate
+            const appts = await appointmentsAPI.list();
+
+            // Fetch ortho blocks — optional; table may not exist yet
+            let blocks: any[] = [];
+            try {
+                blocks = await appointmentsAPI.listOrthoBlocks();
+            } catch (orthoErr) {
+                console.warn('ortho_blocks not available, skipping:', orthoErr);
+            }
 
             const mappedAppts = appts.map(a => {
-                const cleanedStartTime = a.start_time.replace(/([+-]\d{2}:\d{2}|Z)$/i, '');
-                const cleanedEndTime = a.end_time.replace(/([+-]\d{2}:\d{2}|Z)$/i, '');
-                const startDate = typeof cleanedStartTime === 'string' ? new Date(cleanedStartTime) : new Date();
-                const endDate = typeof cleanedEndTime === 'string' ? new Date(cleanedEndTime) : new Date();
+                // Las horas ya están en formato HH:MM:SS, solo necesitamos combinarlas con la fecha
+                // La fecha está en a.date (yyyy-MM-dd)
+                const dateStr = a.date || format(new Date(), 'yyyy-MM-dd');
+                
+                // Construir datetime válido para parsing
+                const startDatetime = new Date(`${dateStr}T${a.start_time}`);
+                const endDatetime = new Date(`${dateStr}T${a.end_time}`);
 
                 return {
                     id: a.id,
                     title: a.reason || 'Cita',
-                    start: format(startDate, 'HH:mm'),
-                    end: format(endDate, 'HH:mm'),
-                    date: a.appointment_date || format(startDate, 'yyyy-MM-dd'),
-                    type: a.appointment_type,
+                    start: format(startDatetime, 'HH:mm'),
+                    end: format(endDatetime, 'HH:mm'),
+                    date: dateStr,
+                    type: a.type,
                     status: a.status,
                     patientId: a.patient_id,
                     patientName: a.patient ? `${a.patient.first_name} ${a.patient.last_name}` : 'Paciente',
@@ -143,7 +150,7 @@ const Appointments = () => {
 
         } catch (err) {
             console.error('Error fetching calendar data:', err);
-            toast('Error al cargar citas.');
+            toast('Error al cargar citas.', 'error');
         } finally {
             setLoadingData(false);
         }
@@ -190,7 +197,7 @@ const Appointments = () => {
 
     const handleAttendance = async (id, statusUI) => {
         let backendStatus = statusUI;
-        if (statusUI === 'llegó') backendStatus = 'atendido';
+        if (statusUI === 'llegó') backendStatus = 'completada';
         if (statusUI === 'no_llegó') backendStatus = 'anulada';
 
         try {
@@ -214,11 +221,7 @@ const Appointments = () => {
         };
     };
 
-    const toast = (msg) => {
-        setToastMsg(msg);
-        setShowToast(true);
-        setTimeout(() => setShowToast(false), 3000);
-    };
+    const toast = (msg: string, type: 'success' | 'error' | 'warning' | 'info' = 'info') => showToast(msg, type);
 
     const handleAddOrthoBlock = async () => {
         if (!newBlock.date) {
@@ -319,34 +322,34 @@ const Appointments = () => {
     return (
         <div className="space-y-4 md:space-y-6">
             {/* Header */}
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-                <div className="flex-1">
-                    <h1 className="text-2xl md:text-3xl font-bold text-gray-800">Citas</h1>
-                    <p className="text-gray-500 text-sm mt-1">Administra tu agenda</p>
-                </div>
-                <div className="flex items-center gap-2">
-                    <button
-                        type="button"
-                        onClick={() => setShowOrthoPanel(!showOrthoPanel)}
-                        className="px-3 md:px-4 py-2 md:py-2.5 rounded-xl font-bold flex items-center gap-2 text-xs md:text-sm border-2 transition-all"
-                        style={showOrthoPanel
-                            ? { backgroundColor: '#8CC63E', color: '#fff', borderColor: '#8CC63E' }
-                            : { color: '#6aad2d', borderColor: 'rgba(140,198,62,0.4)', backgroundColor: 'transparent' }
-                        }
-                    >
-                        <ShieldCheck size={16} />
-                        <span className="hidden sm:inline">Ortodoncia</span>
-                    </button>
-                    <button
-                        type="button"
-                        onClick={() => setShowCreateModal(true)}
-                        className="flex-1 sm:flex-none bg-primary hover:bg-green-600 text-white px-3 md:px-5 py-2 md:py-2.5 rounded-xl font-bold flex items-center justify-center gap-2 text-xs md:text-sm transition-all shadow-md"
-                    >
-                        <Plus size={18} />
-                        Nueva Cita
-                    </button>
-                </div>
-            </div>
+            <PageHeader
+                title="Citas"
+                subtitle="Administra tu agenda de citas"
+                action={
+                    <div className="flex items-center gap-2">
+                        <button
+                            type="button"
+                            onClick={() => setShowOrthoPanel(!showOrthoPanel)}
+                            className="px-3 md:px-4 py-2 md:py-2.5 rounded-xl font-bold flex items-center gap-2 text-xs md:text-sm border-2 transition-all"
+                            style={showOrthoPanel
+                                ? { backgroundColor: '#8CC63E', color: '#fff', borderColor: '#8CC63E' }
+                                : { color: '#6aad2d', borderColor: 'rgba(140,198,62,0.4)', backgroundColor: 'transparent' }
+                            }
+                        >
+                            <ShieldCheck size={16} />
+                            <span className="hidden sm:inline">Ortodoncia</span>
+                        </button>
+                        <button
+                            type="button"
+                            onClick={() => setShowCreateModal(true)}
+                            className="flex-1 sm:flex-none bg-primary hover:bg-green-600 text-white px-3 md:px-5 py-2 md:py-2.5 rounded-xl font-bold flex items-center justify-center gap-2 text-xs md:text-sm transition-all shadow-md"
+                        >
+                            <Plus size={18} />
+                            Nueva Cita
+                        </button>
+                    </div>
+                }
+            />
 
             {showOrthoPanel && (
                 <div className="rounded-2xl p-4 md:p-6 animate-in fade-in slide-in-from-top-2 duration-300 mb-6" style={{ backgroundColor: 'rgba(140,198,62,0.04)', border: '2px solid rgba(140,198,62,0.2)' }}>
@@ -464,6 +467,13 @@ const Appointments = () => {
                 </DaySummarySidebar>
 
                 <div className="flex-1 bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden flex flex-col h-[calc(100vh-140px)] min-w-0">
+                    <SectionHeader
+                        title="Calendario"
+                        icon={CalendarDays}
+                        iconColor="text-primary"
+                        gradientFrom="from-primary/10"
+                        gradientTo="to-primary/5"
+                    />
                     <div className="px-4 md:px-6 py-3 border-b border-gray-100 flex flex-col sm:flex-row items-center justify-between shrink-0 bg-white gap-3">
                         <div className="flex items-center gap-2 md:gap-4 w-full sm:w-auto justify-between sm:justify-start">
                             <div className="flex items-center gap-1 md:gap-2">
@@ -630,15 +640,6 @@ const Appointments = () => {
                 initialDate={selectedDate}
                 toast={toast}
             />
-
-            {
-                showToast && (
-                    <div className="fixed bottom-8 right-8 bg-gray-800 text-white px-6 py-3 rounded-xl shadow-lg flex items-center gap-3 animate-in slide-in-from-bottom-4 z-50">
-                        <CheckCircle className="text-primary" size={20} />
-                        <span className="font-medium">{toastMsg}</span>
-                    </div>
-                )
-            }
         </div >
     );
 };

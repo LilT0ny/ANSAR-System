@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { X, CheckCircle, MessageCircle } from 'lucide-react';
 import { format, parseISO } from 'date-fns';
 import { es } from 'date-fns/locale';
-import { appointmentsAPI } from '../../services/api';
+import { appointmentsAPI } from '../../../services/api';
 
 const AppointmentModal = ({
     isOpen,
@@ -20,7 +20,8 @@ const AppointmentModal = ({
         date: format(new Date(), 'yyyy-MM-dd'),
         start: '09:00',
         end: '10:00',
-        type: 'Consulta General',
+        type: 'general',
+        reason: '',
         status: 'pendiente',
         sendWhatsApp: true,
     });
@@ -35,6 +36,7 @@ const AppointmentModal = ({
                 date: format(initialDate, 'yyyy-MM-dd'),
                 patient: '',
                 patientId: null,
+                reason: '',
                 start: '09:00',
                 end: '10:00'
             }));
@@ -47,7 +49,7 @@ const AppointmentModal = ({
     );
 
     const handleCreateEvent = async () => {
-        if (!newEvent.patient || !newEvent.date || !newEvent.start || !newEvent.end) {
+        if (!newEvent.patient || !newEvent.date || !newEvent.start || !newEvent.end || !newEvent.reason) {
             toast('Completa todos los campos requeridos.');
             return;
         }
@@ -57,17 +59,13 @@ const AppointmentModal = ({
         }
 
         try {
-            const startDateTime = new Date(`${newEvent.date}T${newEvent.start}`);
-            const endDateTime = new Date(`${newEvent.date}T${newEvent.end}`);
-
             await appointmentsAPI.create({
                 patient_id: newEvent.patientId,
-                doctor_id: 1, // Fixed for now as in the original code
-                appointment_date: newEvent.date,
-                start_time: startDateTime.toISOString(),
-                end_time: endDateTime.toISOString(),
-                reason: newEvent.type,
-                appointment_type: newEvent.type,
+                date: newEvent.date,
+                start_time: newEvent.start,
+                end_time: newEvent.end,
+                reason: newEvent.reason,
+                type: newEvent.type,
                 status: 'pendiente'
             });
 
@@ -136,6 +134,16 @@ const AppointmentModal = ({
                                 </div>
                             )}
                         </div>
+                    </div>
+                    <div>
+                        <label className="block text-sm font-bold mb-1">Servicio a Realizar</label>
+                        <input
+                            type="text"
+                            placeholder="Ej: Limpieza, Empaste, Extracción, Ortodoncia..."
+                            value={newEvent.reason}
+                            onChange={e => setNewEvent({ ...newEvent, reason: e.target.value })}
+                            className="w-full border border-gray-200 rounded-xl px-4 py-2 text-sm focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none"
+                        />
                     </div>
                     <div className="grid grid-cols-2 gap-4">
                         <div>

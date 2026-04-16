@@ -1,32 +1,26 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useForm } from 'react-hook-form';
-import { Search, Plus, Edit, Trash2, X, Check, Loader2, RefreshCw, MessageCircle } from 'lucide-react';
+import { Search, Plus, Edit, Trash2, X, Check, Loader2, RefreshCw, MessageCircle, Users } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import clsx from 'clsx';
 import { patientsAPI } from '../services/api';
 import { Patient } from '../types';
+import { calculateAge } from '../utils';
+import { PageHeader, SectionHeader } from '../components/molecules';
+import { useToast } from '../components/atoms';
 
 const Patients = () => {
     const navigate = useNavigate();
+    const { showToast } = useToast();
     const [showForm, setShowForm] = useState(false);
     const [searchTerm, setSearchTerm] = useState('');
     const [patients, setPatients] = useState<Patient[]>([]);
     const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState(false);
     const [error, setError] = useState<string | null>(null);
+    const [deletingId, setDeletingId] = useState<string | null>(null);
 
     const { register, handleSubmit, reset, formState: { errors } } = useForm();
-
-    // ── Helper: calculate age ─────────────────────────────────
-    const calculateAge = (birthDate: string | null | undefined) => {
-        if (!birthDate) return '—';
-        const today = new Date();
-        const birth = new Date(birthDate);
-        let age = today.getFullYear() - birth.getFullYear();
-        const m = today.getMonth() - birth.getMonth();
-        if (m < 0 || (m === 0 && today.getDate() < birth.getDate())) age--;
-        return age;
-    };
 
     // ── Fetch patients from API ───────────────────────────────
     const fetchPatients = useCallback(async () => {
@@ -55,7 +49,6 @@ const Patients = () => {
         setSaving(true);
         setError(null);
         try {
-            // Map frontend form fields to API fields
             const apiData = {
                 first_name: formData.firstName,
                 last_name: formData.lastName,
@@ -70,11 +63,12 @@ const Patients = () => {
             await patientsAPI.create(apiData);
             setShowForm(false);
             reset();
-            // Refresh the list
             await fetchPatients();
+            showToast(`Paciente ${formData.firstName} ${formData.lastName} registrado correctamente.`, 'success');
         } catch (err: any) {
             console.error('Error creating patient:', err);
             setError(err.message || 'Error al crear paciente');
+            showToast('Error al registrar paciente. Verifícá los datos.', 'error');
         } finally {
             setSaving(false);
         }
@@ -82,13 +76,23 @@ const Patients = () => {
 
     // ── Delete patient ────────────────────────────────────────
     const handleDelete = async (id: string) => {
-        if (!window.confirm('¿Está seguro de eliminar este paciente?')) return;
-        try {
-            await patientsAPI.delete(id);
-            await fetchPatients();
-        } catch (err: any) {
-            console.error('Error deleting patient:', err);
-            setError(err.message || 'Error al eliminar paciente');
+        if (deletingId === id) {
+            // Second click confirms delete
+            try {
+                await patientsAPI.delete(id);
+                await fetchPatients();
+                showToast('Paciente eliminado correctamente.', 'success');
+            } catch (err: any) {
+                console.error('Error deleting patient:', err);
+                showToast(err.message || 'Error al eliminar paciente.', 'error');
+            } finally {
+                setDeletingId(null);
+            }
+        } else {
+            // First click: ask for confirmation via toast + highlight button
+            setDeletingId(id);
+            showToast('Presioná nuevamente el botón para confirmar la eliminación.', 'warning');
+            setTimeout(() => setDeletingId(null), 4000);
         }
     };
 
@@ -115,28 +119,28 @@ const Patients = () => {
 
     return (
         <div className="space-y-6">
-            <header className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-                <div>
-                    <h1 className="text-2xl md:text-3xl font-serif font-bold text-gray-800">Gestión de Pacientes</h1>
-                    <p className="text-secondary mt-1 text-sm md:text-base">Administra la base de datos de pacientes de la clínica.</p>
-                </div>
-                <div className="flex items-center space-x-2 w-full sm:w-auto">
-                    <button
-                        onClick={fetchPatients}
-                        className="text-gray-500 hover:text-primary p-2 rounded-lg hover:bg-gray-100 transition-colors cursor-pointer"
-                        title="Refrescar"
-                    >
-                        <RefreshCw size={20} className={loading ? 'animate-spin' : ''} />
-                    </button>
-                    <button
-                        onClick={() => setShowForm(true)}
-                        className="flex-1 sm:flex-none justify-center bg-primary font-bold hover:bg-green-600 text-white px-4 py-2.5 rounded-xl flex items-center space-x-2 transition-colors shadow-sm cursor-pointer text-sm"
-                    >
-                        <Plus size={20} />
-                        <span>Nuevo Paciente</span>
-                    </button>
-                </div>
-            </header>
+            <PageHeader 
+                title="Gestión de Pacientes"
+                subtitle="Administra la base de datos de pacientes de la clínica."
+                action={
+                    <div className="flex items-center space-x-2 w-full sm:w-auto">
+                        <button
+                            onClick={fetchPatients}
+                            className="text-gray-500 hover:text-primary p-2 rounded-lg hover:bg-gray-100 transition-colors cursor-pointer"
+                            title="Refrescar"
+                        >
+                            <RefreshCw size={20} className={loading ? 'animate-spin' : ''} />
+                        </button>
+                        <button
+                            onClick={() => setShowForm(true)}
+                            className="flex-1 sm:flex-none justify-center bg-primary font-bold hover:bg-green-600 text-white px-4 py-2.5 rounded-xl flex items-center space-x-2 transition-colors shadow-sm cursor-pointer text-sm"
+                        >
+                            <Plus size={20} />
+                            <span>Nuevo Paciente</span>
+                        </button>
+                    </div>
+                }
+            />
 
             {/* Error Banner */}
             {error && (
@@ -167,6 +171,13 @@ const Patients = () => {
 
             {/* Patients List - Cards on Mobile, Table on Desktop */}
             <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+                <SectionHeader
+                    title="Listado de Pacientes"
+                    icon={Users}
+                    iconColor="text-primary"
+                    gradientFrom="from-primary/10"
+                    gradientTo="to-primary/5"
+                />
                 {loading ? (
                     <div className="flex items-center justify-center py-16">
                         <Loader2 className="animate-spin text-primary mr-3" size={24} />
@@ -187,8 +198,12 @@ const Patients = () => {
                                             <div className="flex items-center gap-2 text-xs text-gray-500">
                                                 <span>{calculateAge(patient.date_of_birth)} años</span>
                                                 <span>•</span>
-                                                <span className={Number(patient.debt || 0) > 0 ? 'text-red-600' : 'text-green-600'}>
-                                                    ${Number(patient.debt || 0).toFixed(2)}
+                                                <span className={Number(patient.debt || 0) > 0 ? 'text-red-600 font-semibold' : Number(patient.debt || 0) < 0 ? 'text-blue-600 font-semibold' : 'text-green-600'}>
+                                                    {Number(patient.debt || 0) > 0 
+                                                        ? `Deuda: $${Number(patient.debt).toFixed(2)}` 
+                                                        : Number(patient.debt || 0) < 0 
+                                                        ? `Crédito: $${Math.abs(Number(patient.debt)).toFixed(2)}` 
+                                                        : 'Sin deuda'}
                                                 </span>
                                             </div>
                                         </div>
@@ -210,7 +225,13 @@ const Patients = () => {
                                         )}
                                         <button
                                             onClick={() => handleDelete(patient.id)}
-                                            className="p-2 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-lg"
+                                            className={clsx(
+                                                "p-2 rounded-lg transition-colors",
+                                                deletingId === patient.id
+                                                    ? 'bg-red-100 text-red-600 ring-1 ring-red-400'
+                                                    : 'text-gray-400 hover:text-red-500 hover:bg-red-50'
+                                            )}
+                                            title={deletingId === patient.id ? 'Confirmar eliminación' : 'Eliminar'}
                                         >
                                             <Trash2 size={16} />
                                         </button>
@@ -250,9 +271,11 @@ const Patients = () => {
                                             </td>
                                             <td className="px-4 py-3 text-sm font-medium">
                                                 {Number(patient.debt || 0) > 0 ? (
-                                                    <span className="text-red-600">${Number(patient.debt).toFixed(2)}</span>
+                                                    <span className="text-red-600 font-semibold">Deuda: ${Number(patient.debt).toFixed(2)}</span>
+                                                ) : Number(patient.debt || 0) < 0 ? (
+                                                    <span className="text-blue-600 font-semibold">Crédito: ${Math.abs(Number(patient.debt)).toFixed(2)}</span>
                                                 ) : (
-                                                    <span className="text-green-600">$0.00</span>
+                                                    <span className="text-green-600">Sin deuda</span>
                                                 )}
                                             </td>
                                             <td className="px-4 py-3 flex justify-center gap-2">
@@ -273,8 +296,13 @@ const Patients = () => {
                                                     </button>
                                                 )}
                                                 <button
-                                                    className="p-1.5 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors"
-                                                    title="Eliminar"
+                                                    className={clsx(
+                                                        "p-1.5 rounded-lg transition-colors",
+                                                        deletingId === patient.id
+                                                            ? 'bg-red-100 text-red-600 ring-1 ring-red-400'
+                                                            : 'text-gray-400 hover:text-red-500 hover:bg-red-50'
+                                                    )}
+                                                    title={deletingId === patient.id ? 'Confirmar eliminación' : 'Eliminar'}
                                                     onClick={() => handleDelete(patient.id)}
                                                 >
                                                     <Trash2 size={16} />

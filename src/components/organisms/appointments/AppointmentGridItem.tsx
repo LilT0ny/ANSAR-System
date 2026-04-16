@@ -16,12 +16,14 @@ const AppointmentGridItem = ({
             )}
             style={style}
         >
-            <div className="font-bold truncate text-xs">{appt.type || appt.title}</div>
-            <div className="truncate text-[10px] font-semibold opacity-85">
-                {appt.start} – {appt.end}
-            </div>
-            <div className="font-bold truncate text-[10px]">
+            <div className="font-bold truncate text-xs">
                 {appt.patientName || appt.patient}
+            </div>
+            <div className="truncate text-[10px] font-semibold opacity-85">
+                {appt.type || appt.title}
+            </div>
+            <div className="truncate text-[10px] font-semibold">
+                {appt.start} – {appt.end}
             </div>
 
             <div className="absolute top-1 right-1 opacity-0 group-hover:opacity-100 flex gap-0.5 bg-white/90 rounded-lg p-0.5 shadow-sm">

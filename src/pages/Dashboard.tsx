@@ -1,9 +1,9 @@
 import { useState, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Activity, Users, Calendar, DollarSign, ChevronRight, TrendingUp } from 'lucide-react';
-import { usePatients, useAppointments } from '../hooks';
-import { useInvoices } from '../hooks/useInvoices';
+import { Activity, Users, Calendar, DollarSign, ChevronRight, TrendingUp, BarChart2 } from 'lucide-react';
+import { usePatients, useAppointments, useInvoices } from '../hooks';
 import { Spinner } from '../components/atoms';
+import { PageHeader, SectionHeader } from '../components/molecules';
 
 const Dashboard = () => {
   const navigate = useNavigate();
@@ -69,14 +69,10 @@ const Dashboard = () => {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <header>
-        <h1 className="text-2xl md:text-3xl font-bold text-gray-800">
-          Hola, {userName}
-        </h1>
-        <p className="text-gray-500 text-sm mt-1">
-          Tienes <span className="font-semibold text-primary">{totalPatients}</span> paciente{totalPatients !== 1 ? 's' : ''} registrado{totalPatients !== 1 ? 's' : ''}
-        </p>
-      </header>
+      <PageHeader 
+        title={`Hola, ${userName}`}
+        subtitle={`Tienes ${totalPatients} paciente${totalPatients !== 1 ? 's' : ''} registrado${totalPatients !== 1 ? 's' : ''}`}
+      />
 
       {/* KPIs Grid - Minimalista */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 md:gap-4">
@@ -114,54 +110,70 @@ const Dashboard = () => {
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 md:gap-6">
         
         {/* Gráfico */}
-        <div className="lg:col-span-2 bg-white rounded-xl shadow-sm p-4 md:p-6">
-          <h3 className="text-base md:text-lg font-bold text-gray-800 mb-4">Rendimiento</h3>
-          <div className="h-48 md:h-64 bg-gray-50 rounded-lg flex items-center justify-center">
-            <span className="text-gray-400 text-sm">Gráfico de rendimiento</span>
+        <div className="lg:col-span-2 bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+          <SectionHeader
+            title="Rendimiento"
+            icon={BarChart2}
+            iconColor="text-blue-600"
+            gradientFrom="from-blue-50"
+            gradientTo="to-blue-50/50"
+          />
+          <div className="p-4 md:p-6">
+            <div className="h-48 md:h-64 bg-gray-50 rounded-lg flex items-center justify-center">
+              <span className="text-gray-400 text-sm">Gráfico de rendimiento</span>
+            </div>
           </div>
         </div>
 
         {/* Pacientes Recientes */}
-        <div className="bg-white rounded-xl shadow-sm p-4 md:p-6">
-          <div className="flex items-center justify-between mb-4">
-            <h3 className="text-base md:text-lg font-bold text-gray-800">Recientes</h3>
-            <button
-              onClick={() => navigate('/pacientes')}
-              className="text-xs text-primary hover:underline flex items-center gap-1"
-            >
-              Ver todos <ChevronRight size={14} />
-            </button>
-          </div>
-          
-          <div className="space-y-2">
-            {loading ? (
-              <div className="flex justify-center py-8">
-                <Spinner />
-              </div>
-            ) : recentPatients.length === 0 ? (
-              <p className="text-gray-400 text-center py-6 text-sm">Sin pacientes</p>
-            ) : (
-              recentPatients.map((patient) => (
-                <button
-                  key={patient.id}
-                  onClick={() => navigate(`/historia/${patient.id}`)}
-                  className="w-full flex items-center gap-3 p-2 rounded-lg hover:bg-gray-50 transition-colors text-left"
-                >
-                  <div className="w-8 h-8 rounded-full bg-primary/10 text-primary flex items-center justify-center text-xs font-bold">
-                    {patient.first_name?.charAt(0)}{patient.last_name?.charAt(0)}
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <p className="text-sm font-medium text-gray-800 truncate">
-                      {patient.first_name} {patient.last_name}
-                    </p>
-                    <p className="text-xs text-gray-400">{patient.document_id}</p>
-                  </div>
-                  {Number(patient.debt) > 0 && (
-                    <span className="text-xs font-medium text-red-500">${Number(patient.debt).toFixed(0)}</span>
-                  )}
-                </button>
-              ))
-            )}
+        <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+          <SectionHeader
+            title="Recientes"
+            icon={Users}
+            iconColor="text-primary"
+            gradientFrom="from-primary/10"
+            gradientTo="to-primary/5"
+          />
+          <div className="p-4 md:p-6">
+            <div className="flex items-center justify-between mb-4">
+              <span />
+              <button
+                onClick={() => navigate('/pacientes')}
+                className="text-xs text-primary hover:underline flex items-center gap-1"
+              >
+                Ver todos <ChevronRight size={14} />
+              </button>
+            </div>
+            <div className="space-y-2">
+              {loading ? (
+                <div className="flex justify-center py-8">
+                  <Spinner />
+                </div>
+              ) : recentPatients.length === 0 ? (
+                <p className="text-gray-400 text-center py-6 text-sm">Sin pacientes</p>
+              ) : (
+                recentPatients.map((patient) => (
+                  <button
+                    key={patient.id}
+                    onClick={() => navigate(`/historia/${patient.id}`)}
+                    className="w-full flex items-center gap-3 p-2 rounded-lg hover:bg-gray-50 transition-colors text-left"
+                  >
+                    <div className="w-8 h-8 rounded-full bg-primary/10 text-primary flex items-center justify-center text-xs font-bold">
+                      {patient.first_name?.charAt(0)}{patient.last_name?.charAt(0)}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-medium text-gray-800 truncate">
+                        {patient.first_name} {patient.last_name}
+                      </p>
+                      <p className="text-xs text-gray-400">{patient.document_id}</p>
+                    </div>
+                    {Number(patient.debt) > 0 && (
+                      <span className="text-xs font-medium text-red-500">${Number(patient.debt).toFixed(0)}</span>
+                    )}
+                  </button>
+                ))
+              )}
+            </div>
           </div>
         </div>
       </div>

@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { Outlet, useNavigate } from 'react-router-dom';
-import Sidebar from '../components/Sidebar';
+import Sidebar from '../components/organisms/Sidebar';
 import { Menu, X } from 'lucide-react';
 
 const AdminLayout = () => {
