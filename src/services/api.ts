@@ -309,6 +309,17 @@ export const appointmentsAPI = {
         return handleSupabase(query.order('start_time', { ascending: true }));
     },
 
+    getByPatientId: async (patientId: string): Promise<Appointment[]> => {
+        return handleSupabase(
+            supabase
+                .from('appointments')
+                .select('*')
+                .eq('patient_id', patientId)
+                .order('date', { ascending: false })
+                .order('start_time', { ascending: false })
+        );
+    },
+
     create: async (data: Partial<Appointment>): Promise<Appointment> => {
         return handleSupabase(
             supabase

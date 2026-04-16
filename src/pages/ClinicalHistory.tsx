@@ -5,10 +5,11 @@ import clsx from 'clsx';
 import {
     User, FileText, Activity, Layers, Edit2, Save, X, ArrowLeft,
     CheckCircle, AlertCircle, Calendar, Phone, Mail, MapPin, Briefcase,
-    Loader2, Search, Users, Download
+    Loader2, Search, Users, Download, Clock
 } from 'lucide-react';
 import { Odontogram, OrthodonticGallery } from '../components/organisms';
-import { patientsAPI, serviceHistoryAPI } from '../services/api';
+import { patientsAPI, serviceHistoryAPI, appointmentsAPI } from '../services/api';
+import Badge from '../components/atoms/Badge';
 import { calculateAge } from '../utils';
 import generateClinicalHistoryPDF from '../utils/clinicalHistoryPDF';
 import generateFormPDF from '../utils/formPDF';
@@ -204,6 +205,7 @@ const PatientClinicalView = ({ patientId, navigate }) => {
     const [patient, setPatient] = useState(null);
     const [clinicalData, setClinicalData] = useState(null);
     const [serviceHistory, setServiceHistory] = useState([]);
+    const [appointments, setAppointments] = useState([]);
     const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState(false);
     const [error, setError] = useState(null);
@@ -254,6 +256,15 @@ const PatientClinicalView = ({ patientId, navigate }) => {
             } catch (e) {
                 console.log('No service history found:', e.message);
                 setServiceHistory([]);
+            }
+
+            // Fetch appointments history
+            try {
+                const appts = await appointmentsAPI.getByPatientId(patientId);
+                setAppointments(appts || []);
+            } catch (e) {
+                console.log('No appointments found:', e.message);
+                setAppointments([]);
             }
         } catch (err) {
             console.error('Error fetching patient:', err);
@@ -662,6 +673,102 @@ const PatientClinicalView = ({ patientId, navigate }) => {
                             </div>
                             {serviceHistory.length === 0 && (
                                 <p className="text-center text-gray-400 text-sm">Sin atenciones registradas</p>
+                            )}
+                        </div>
+                    </div>
+                )}
+
+                {/* ── Card: Appointments History ─── */}
+                {appointments && appointments.length > 0 && (
+                    <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden animate-in fade-in duration-300">
+                        <SectionHeader
+                            title="Historial de Citas"
+                            icon={Calendar}
+                            iconColor="text-orange-600"
+                            gradientFrom="from-orange-50"
+                            gradientTo="to-orange-50/50"
+                        />
+                        <div className="p-5 md:p-8">
+                            <div className="space-y-3 max-h-96 overflow-y-auto">
+                                {appointments.map((appointment, idx) => (
+                                    <div 
+                                        key={appointment.id || idx} 
+                                        className="p-4 border border-gray-200 rounded-xl hover:border-orange-300/50 hover:bg-orange-50/30 transition-all"
+                                    >
+                                        <div className="flex items-start justify-between gap-4">
+                                            <div className="flex-1">
+                                                {/* Date and Time */}
+                                                <div className="flex items-center gap-3 mb-3 pb-3 border-b border-gray-100">
+                                                    <Calendar className="text-orange-500" size={18} />
+                                                    <div className="flex-1">
+                                                        <p className="font-semibold text-gray-800 text-sm">
+                                                            {new Date(appointment.date).toLocaleDateString('es-ES', {
+                                                                weekday: 'long',
+                                                                year: 'numeric',
+                                                                month: 'long',
+                                                                day: 'numeric',
+                                                            })}
+                                                        </p>
+                                                        <div className="flex items-center gap-2 mt-1">
+                                                            <Clock size={14} className="text-gray-400" />
+                                                            <p className="text-xs text-gray-500">
+                                                                {appointment.start_time} - {appointment.end_time}
+                                                            </p>
+                                                        </div>
+                                                    </div>
+                                                </div>
+
+                                                {/* Appointment Details */}
+                                                <div className="text-sm space-y-2">
+                                                    <p>
+                                                        <span className="text-gray-500">Tipo:</span>{' '}
+                                                        <Badge 
+                                                            variant={appointment.type === 'general' ? 'info' : 'neutral'}
+                                                            size="sm"
+                                                        >
+                                                            {appointment.type === 'general' ? 'General' : 'Ortodoncia'}
+                                                        </Badge>
+                                                    </p>
+                                                    <p>
+                                                        <span className="text-gray-500">Motivo:</span>{' '}
+                                                        <span className="font-semibold">{appointment.reason || 'N/A'}</span>
+                                                    </p>
+                                                    <p>
+                                                        <span className="text-gray-500">Estado:</span>{' '}
+                                                        <Badge 
+                                                            variant={
+                                                                appointment.status === 'completada' ? 'success' :
+                                                                appointment.status === 'confirmada' ? 'info' :
+                                                                appointment.status === 'pendiente' ? 'warning' : 'danger'
+                                                            }
+                                                            size="sm"
+                                                        >
+                                                            {appointment.status.charAt(0).toUpperCase() + appointment.status.slice(1)}
+                                                        </Badge>
+                                                    </p>
+                                                    <p>
+                                                        <span className="text-gray-500">Asistencia:</span>{' '}
+                                                        <Badge 
+                                                            variant={appointment.attended ? 'success' : 'neutral'}
+                                                            size="sm"
+                                                        >
+                                                            {appointment.attended ? 'Asistió' : 'No asistió'}
+                                                        </Badge>
+                                                    </p>
+                                                    {appointment.notes && (
+                                                        <div className="mt-3 p-3 bg-gray-50 rounded-lg border border-gray-200">
+                                                            <p className="text-xs font-semibold text-gray-600 mb-1">Notas:</p>
+                                                            <p className="text-xs text-gray-600 break-words">{appointment.notes}</p>
+                                                        </div>
+                                                    )}
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+                            {appointments.length === 0 && (
+                                <p className="text-center text-gray-400 text-sm">Sin citas registradas</p>
                             )}
                         </div>
                     </div>
