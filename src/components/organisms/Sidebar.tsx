@@ -69,11 +69,11 @@ const Sidebar: React.FC<SidebarProps> = ({
             {/* Logo Section */}
             <div className="p-4 border-b border-gray-100">
                 <div className="flex items-center justify-between">
-                    <div className={clsx("flex items-center transition-all", isCollapsed ? "justify-center" : "gap-3")}>
+                    <div className={clsx("flex items-center transition-all", (isCollapsed && !isMobile) ? "justify-center" : "gap-3")}>
                         <div className="w-10 h-10 bg-primary rounded-xl flex items-center justify-center text-white font-bold text-xl shadow-md shrink-0">
                             {clinicName?.charAt(0) || 'M'}
                         </div>
-                        {!isCollapsed && (
+                        {(!isCollapsed || isMobile) && (
                             <div className="min-w-0">
                                 <h1 className="text-lg font-bold text-gray-800 truncate">{clinicName || 'MedicCore'}</h1>
                                 <p className="text-[10px] text-gray-400 truncate">Portal Clínico</p>
@@ -101,7 +101,7 @@ const Sidebar: React.FC<SidebarProps> = ({
                                 }
                             >
                                 <item.icon size={20} className="shrink-0" />
-                                {!isCollapsed && (
+                                {(!isCollapsed || isMobile) && (
                                     <span className="font-medium text-sm truncate">{item.name}</span>
                                 )}
                             </NavLink>
@@ -115,12 +115,12 @@ const Sidebar: React.FC<SidebarProps> = ({
                 {/* User Profile */}
                 <div className={clsx(
                     "flex items-center rounded-xl bg-gray-50 p-2",
-                    isCollapsed ? "justify-center" : "gap-3"
+                    (isCollapsed && !isMobile) ? "justify-center" : "gap-3"
                 )}>
                     <div className="w-9 h-9 bg-primary rounded-full flex items-center justify-center text-white font-bold text-sm shrink-0">
                         {userInitial}
                     </div>
-                    {!isCollapsed && (
+                    {(!isCollapsed || isMobile) && (
                         <div className="flex-1 min-w-0">
                             <p className="text-sm font-medium text-gray-800 truncate">{userName}</p>
                             <p className="text-[10px] text-gray-400 truncate">{user.email || 'Doctor'}</p>
@@ -133,11 +133,11 @@ const Sidebar: React.FC<SidebarProps> = ({
                     onClick={handleLogout}
                     className={clsx(
                         "flex items-center w-full mt-2 rounded-xl text-gray-500 hover:bg-red-50 hover:text-red-500 transition-colors p-2",
-                        isCollapsed ? "justify-center" : "px-3"
+                        (isCollapsed && !isMobile) ? "justify-center" : "px-3"
                     )}
                 >
                     <LogOut size={18} />
-                    {!isCollapsed && <span className="ml-2 text-sm font-medium">Cerrar Sesión</span>}
+                    {(!isCollapsed || isMobile) && <span className="ml-2 text-sm font-medium">Cerrar Sesión</span>}
                 </button>
             </div>
 
